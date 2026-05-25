@@ -1,0 +1,59 @@
+<div class="profile">
+  <svg class="profile__chart" [attr.viewBox]="_viewBox" xmlns="http://www.w3.org/2000/svg">
+    @for (g of _grid(); track $index) {
+      <polygon
+        [attr.points]="g.points"
+        fill="none"
+        stroke="var(--border)"
+        [attr.stroke-width]="g.outer ? 1 : 0.5"
+        [attr.stroke-dasharray]="g.outer ? null : '2 2'"
+      />
+    }
+
+    @for (axis of _axes(); track $index) {
+      <line
+        [attr.x1]="_cx"
+        [attr.y1]="_cy"
+        [attr.x2]="axis.endX"
+        [attr.y2]="axis.endY"
+        stroke="var(--border)"
+        stroke-width="0.5"
+      />
+    }
+
+    <polygon
+      [attr.points]="_polygon()"
+      fill="var(--accent)"
+      fill-opacity="0.18"
+      stroke="var(--accent)"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+    />
+
+    @for (p of _dataPoints(); track $index) {
+      <circle [attr.cx]="p.x" [attr.cy]="p.y" r="3.5" [attr.fill]="p.color" />
+    }
+
+    @for (axis of _axes(); track $index) {
+      @if (axis.label) {
+        <text
+          class="profile__axis-label"
+          [attr.x]="axis.labelX"
+          [attr.y]="axis.labelY"
+          [attr.text-anchor]="axis.anchor"
+          dominant-baseline="middle"
+        >{{ axis.label }}</text>
+      }
+    }
+  </svg>
+
+  <ul class="profile__legend">
+    @for (item of _legend(); track item.label) {
+      <li>
+        <span class="profile__dot" [style.background]="item.color"></span>
+        <span class="profile__label">{{ item.label }}</span>
+        <span class="profile__value">{{ item.value }}</span>
+      </li>
+    }
+  </ul>
+</div>

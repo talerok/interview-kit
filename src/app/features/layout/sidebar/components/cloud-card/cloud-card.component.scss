@@ -1,0 +1,100 @@
+:host {
+  display: block;
+}
+
+.cloud-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  inline-size: 100%;
+  padding: var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+
+  &:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+  }
+
+  &__logo {
+    display: inline-flex;
+    inline-size: 32px;
+    block-size: 32px;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    color: var(--fg-faint);
+    font-size: 20px;
+
+    &[data-kind='dropbox'] { color: #0061ff; }
+  }
+
+  &__main {
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__title {
+    font-weight: 600;
+    color: var(--fg-strong);
+    font-size: var(--text-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-xs);
+    color: var(--fg-subtle);
+  }
+
+  &__dot {
+    inline-size: 6px;
+    block-size: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    flex: 0 0 auto;
+
+    &.is-off { background: var(--fg-faint); }
+    &--syncing { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+    &--error { background: var(--danger); }
+  }
+
+  &__action {
+    inline-size: 20px;
+    block-size: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-subtle);
+    font-size: 12px;
+  }
+
+  &__spinner {
+    inline-size: 14px;
+    block-size: 14px;
+    border: 1.5px solid var(--bg-active);
+    border-block-start-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

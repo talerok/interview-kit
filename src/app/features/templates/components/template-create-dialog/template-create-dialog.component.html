@@ -1,0 +1,79 @@
+<dialog #dialog class="dialog" (close)="_onNativeClose()">
+  <form class="dialog__form" (submit)="_onSubmit($event)">
+    <header class="dialog__head">
+      <div>
+        <h2 class="dialog__title">Новый шаблон интервью</h2>
+        <p class="dialog__desc">Создайте набор вопросов для одного типа интервью. Вопросы и категории можно отредактировать после создания.</p>
+      </div>
+      <button class="dialog__close" type="button" (click)="_onCancel()" aria-label="Закрыть">
+        <app-icon name="x" />
+      </button>
+    </header>
+
+    <div class="dialog__body">
+      <div class="preview">
+        <div
+          class="preview__mark"
+          [style.background]="'oklch(from ' + _previewColor() + ' l c h / 0.14)'"
+          [style.color]="_previewColor()"
+          [style.borderColor]="'oklch(from ' + _previewColor() + ' l c h / 0.25)'"
+        >{{ _previewCode() }}</div>
+        <div class="preview__info">
+          <div class="preview__name">{{ _previewName() }}</div>
+          <div class="preview__sub">Готов к редактированию</div>
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Название шаблона *</span>
+        <input class="input" type="text" [formField]="_form.name" placeholder="Например: Backend Engineer" autofocus />
+        @if (_form.name().touched() && _form.name().errors().length) {
+          <span class="field__error">{{ _form.name().errors()[0].message }}</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Описание</span>
+        <textarea class="input textarea" [formField]="_form.description" rows="2" placeholder="Что покрывает этот шаблон, для какой роли…"></textarea>
+      </label>
+
+      <div class="field">
+        <span class="field__label">Стартовые категории</span>
+        <div class="presets">
+          @for (p of _presets; track p.key) {
+            <button
+              type="button"
+              class="preset"
+              [class.is-on]="_model().categoryPreset === p.key"
+              (click)="_setPreset(p.key)"
+            >
+              <div class="preset__head">
+                <span class="preset__title">{{ p.label }}</span>
+                @if (_model().categoryPreset === p.key) {
+                  <span class="preset__check"><app-icon name="check" /></span>
+                }
+              </div>
+              <div class="preset__desc">{{ p.description }}</div>
+              <div class="preset__dots">
+                @if (p.categories.length === 0) {
+                  <span class="preset__empty">пусто</span>
+                } @else {
+                  @for (c of p.categories; track c.key) {
+                    <span class="preset__dot" [style.background]="_seedColor(c.label)" [attr.title]="c.label"></span>
+                  }
+                }
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <footer class="dialog__foot">
+      <button type="button" class="btn" (click)="_onCancel()">Отмена</button>
+      <button type="submit" class="btn btn--accent" [disabled]="_form().invalid()">
+        <app-icon name="plus" /> Создать и открыть
+      </button>
+    </footer>
+  </form>
+</dialog>

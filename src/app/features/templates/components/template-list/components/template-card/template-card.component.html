@@ -1,0 +1,30 @@
+<article class="tpl-card" (click)="_activate()" tabindex="0">
+  <button
+    class="tpl-card__remove"
+    type="button"
+    (click)="_delete($event)"
+    aria-label="Удалить шаблон"
+  >
+    <app-icon name="trash" />
+  </button>
+
+  <header class="tpl-card__head">
+    <div
+      class="tpl-card__mark"
+      [style.background]="'oklch(from ' + template().color + ' l c h / 0.12)'"
+      [style.color]="template().color"
+      [style.borderColor]="'oklch(from ' + template().color + ' l c h / 0.2)'"
+    >
+      {{ template().code }}
+    </div>
+    <div class="tpl-card__head-text">
+      <div class="tpl-card__title">{{ template().name }}</div>
+      <div class="tpl-card__sub">
+        {{ questionCount() }} {{ questionCount() | pluralRu: _questionForms }}
+        · {{ categoryCount() }} {{ categoryCount() | pluralRu: _categoryForms }}
+      </div>
+    </div>
+  </header>
+
+  <p class="tpl-card__desc">{{ template().description || '—' }}</p>
+</article>

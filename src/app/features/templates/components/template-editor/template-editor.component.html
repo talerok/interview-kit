@@ -1,0 +1,51 @@
+@if (!_store.isLoaded()) {
+  <div class="loading">Загрузка…</div>
+} @else if (_notFound()) {
+  <header class="topbar">
+    <nav class="topbar__crumbs">
+      <a routerLink="/templates">Шаблоны</a>
+    </nav>
+  </header>
+  <section class="page">
+    <div class="empty">
+      <h1>Шаблон не найден</h1>
+      <p>Возможно, он был удалён. Вернитесь к списку и выберите другой.</p>
+      <a class="btn" routerLink="/templates">К списку шаблонов</a>
+    </div>
+  </section>
+} @else if (_template(); as template) {
+  <header class="topbar">
+    <nav class="topbar__crumbs" aria-label="Breadcrumb">
+      <a routerLink="/templates">Шаблоны</a>
+      <app-icon name="chevron-right" />
+      <span class="topbar__crumbs-current">{{ template.name }}</span>
+    </nav>
+  </header>
+
+  <section class="page">
+    <header class="page__header">
+      <div
+        class="page__mark"
+        [style.background]="'oklch(from ' + template.color + ' l c h / 0.12)'"
+        [style.color]="template.color"
+        [style.borderColor]="'oklch(from ' + template.color + ' l c h / 0.2)'"
+      >{{ template.code }}</div>
+      <div class="page__meta">
+        <h1 class="page__title">{{ template.name }}</h1>
+        @if (template.description) {
+          <p class="page__desc">{{ template.description }}</p>
+        }
+      </div>
+    </header>
+
+    <div class="editor">
+      <aside class="editor__side">
+        <app-editor-meta />
+        <app-editor-side />
+      </aside>
+      <main class="editor__main">
+        <app-question-list />
+      </main>
+    </div>
+  </section>
+}

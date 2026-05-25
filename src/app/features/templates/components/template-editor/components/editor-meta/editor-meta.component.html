@@ -1,0 +1,24 @@
+@if (_store.template(); as template) {
+  <section class="meta">
+    <label class="field">
+      <span class="field__label">Название</span>
+      <input
+        class="input"
+        type="text"
+        [value]="template.name"
+        (blur)="_onNameBlur($event)"
+      />
+    </label>
+
+    <label class="field">
+      <span class="field__label">Описание</span>
+      <textarea
+        class="input textarea"
+        rows="3"
+        placeholder="Что покрывает этот шаблон…"
+        [value]="template.description"
+        (blur)="_onDescriptionBlur($event)"
+      ></textarea>
+    </label>
+  </section>
+}

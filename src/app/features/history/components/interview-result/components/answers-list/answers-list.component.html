@@ -1,0 +1,34 @@
+<ul class="ans-list">
+  @for (row of _rows(); track row.answer.id) {
+    <li class="ans-row">
+      <span class="ans-row__num">{{ (row.index + 1).toString().padStart(2, '0') }}</span>
+      <div class="ans-row__main">
+        <div class="ans-row__q">{{ row.answer.questionText }}</div>
+        <div class="ans-row__meta">
+          @if (row.category; as c) {
+            <span
+              class="chip"
+              [style.color]="c.color"
+              [style.background]="'oklch(from ' + c.color + ' l c h / 0.08)'"
+            >
+              <span class="chip__dot" [style.background]="c.color"></span>{{ c.label }}
+            </span>
+          }
+          <span class="ans-row__weight" title="Вес вопроса">
+            <app-icon name="weight" /> ×{{ row.answer.questionWeight }}
+          </span>
+        </div>
+        @if (row.answer.comment) {
+          <div class="ans-row__comment">{{ row.answer.comment }}</div>
+        }
+      </div>
+      @if (row.answer.skipped) {
+        <span class="ans-row__score ans-row__score--skip">пропущ.</span>
+      } @else if (row.answer.score !== null) {
+        <span class="ans-row__score" [attr.data-score]="row.answer.score">{{ row.answer.score }}</span>
+      } @else {
+        <span class="ans-row__score ans-row__score--pending">—</span>
+      }
+    </li>
+  }
+</ul>

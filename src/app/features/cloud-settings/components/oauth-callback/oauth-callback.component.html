@@ -1,0 +1,17 @@
+<section class="page">
+  @switch (_status()) {
+    @case ('pending') {
+      <h1 class="page__title">Подключение хранилища</h1>
+      <p class="page__msg">{{ _message() }}</p>
+    }
+    @case ('success') {
+      <h1 class="page__title">Подключено</h1>
+      <p class="page__msg">{{ _message() }}</p>
+    }
+    @case ('error') {
+      <h1 class="page__title">Не удалось подключить</h1>
+      <p class="page__msg page__msg--error">{{ _message() }}</p>
+      <button type="button" class="btn" (click)="_retry()">Вернуться</button>
+    }
+  }
+</section>

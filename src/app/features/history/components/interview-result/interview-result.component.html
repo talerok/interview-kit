@@ -1,0 +1,111 @@
+@if (!_store.isLoaded()) {
+  <div class="loading">Загрузка…</div>
+} @else if (_notFound()) {
+  <header class="topbar">
+    <nav class="topbar__crumbs">
+      <a routerLink="/history">История</a>
+    </nav>
+  </header>
+  <section class="page">
+    <div class="empty">
+      <h1>Интервью не найдено</h1>
+      <a class="btn" routerLink="/history">К истории</a>
+    </div>
+  </section>
+} @else if (_store.interview(); as interview) {
+  <header class="topbar">
+    <nav class="topbar__crumbs" aria-label="Breadcrumb">
+      <a routerLink="/history">История</a>
+      <app-icon name="chevron-right" />
+      <span class="topbar__crumbs-current">{{ interview.candidate.name }}</span>
+    </nav>
+  </header>
+
+  <section class="page">
+    <header class="page__header">
+      @if (_store.template(); as template) {
+        <div class="page__mark" [style.background]="template.color">{{ _initials() }}</div>
+      } @else {
+        <div class="page__mark page__mark--neutral">{{ _initials() }}</div>
+      }
+      <div class="page__meta">
+        <h1 class="page__title">{{ interview.candidate.name }}</h1>
+        <p class="page__desc">
+          {{ interview.candidate.position || '—' }} · {{ interview.candidate.date | fmtDate }} ·
+          {{ interview.durationMin }} мин
+        </p>
+      </div>
+    </header>
+
+    <div class="result">
+      <main class="result__main">
+        <app-score-hero
+          [avg]="_store.avg()"
+          [band]="_store.band()"
+          [distribution]="_store.distribution()"
+          [answered]="_store.answeredCount()"
+          [skipped]="_store.skippedCount()"
+        />
+
+        @if (_store.categories().length > 0) {
+          <section class="card">
+            <header class="card__head">
+              <div>
+                <h2 class="card__title">Профиль по категориям</h2>
+                <p class="card__desc">Средняя оценка в каждой категории, по шкале 1–5.</p>
+              </div>
+            </header>
+            <app-score-profile [data]="_store.categoryAverages()" />
+          </section>
+        }
+
+        <section>
+          <app-answers-list [answers]="_store.answers()" [categories]="_store.categories()" />
+        </section>
+      </main>
+
+      <aside class="result__aside">
+        <div class="card">
+          <div class="card__label">Сводка</div>
+          @if (_store.template(); as template) {
+            <div class="meta-row">
+              <span class="meta-row__lbl">Тип интервью</span>
+              <span class="meta-row__val">{{ template.name }}</span>
+            </div>
+          }
+          <div class="meta-row">
+            <span class="meta-row__lbl">Дата</span>
+            <span class="meta-row__val">{{ interview.candidate.date | fmtDate }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-row__lbl">Длительность</span>
+            <span class="meta-row__val">{{ interview.durationMin }} мин</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-row__lbl">Вопросов</span>
+            <span class="meta-row__val">{{ _store.answers().length }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-row__lbl">Оценено</span>
+            <span class="meta-row__val">{{ _store.answeredCount() }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-row__lbl">Пропущено</span>
+            <span class="meta-row__val">{{ _store.skippedCount() }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-row__lbl">Средняя</span>
+            <span class="meta-row__val meta-row__val--mono">{{ _store.avg().toFixed(2) }} / 5</span>
+          </div>
+        </div>
+
+        @if (interview.notes) {
+          <div class="card">
+            <div class="card__label"><app-icon name="notes" /> Заметки по кандидату</div>
+            <p class="notes">{{ interview.notes }}</p>
+          </div>
+        }
+      </aside>
+    </div>
+  </section>
+}

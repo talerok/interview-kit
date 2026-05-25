@@ -1,0 +1,60 @@
+<header class="q-list__head">
+  @if (_activeCategoryLabel(); as label) {
+    <div class="q-list__filter">Категория: <strong>{{ label }}</strong></div>
+  } @else {
+    <div class="q-list__filter">Все категории</div>
+  }
+  <button
+    type="button"
+    class="btn btn--accent btn--sm"
+    (click)="_onAdd()"
+    [disabled]="_store.editing() !== null"
+  >
+    <app-icon name="plus" /> Добавить вопрос
+  </button>
+</header>
+
+<div class="q-list">
+  @if (_store.editing() === 'new') {
+    <app-question-editor
+      mode="new"
+      [categories]="_store.categories()"
+      (dismissed)="_onCancel()"
+      (saved)="_onSaveNew($event)"
+    />
+  }
+
+  @for (row of _rows(); track row.question.id) {
+    @if (_store.editing() === row.question.id) {
+      <app-question-editor
+        mode="edit"
+        [categories]="_store.categories()"
+        [initial]="_editingDraft()"
+        (dismissed)="_onCancel()"
+        (saved)="_onSaveEdit($event)"
+      />
+    } @else {
+      <app-question-row
+        [question]="row.question"
+        [category]="row.category"
+        [index]="row.index"
+        (edit)="_onEdit($event)"
+        (remove)="_onDelete($event)"
+      />
+    }
+  }
+
+  @if (_store.questions().length === 0 && _store.editing() === null) {
+    <div class="q-list__empty">
+      <h3>Нет вопросов</h3>
+      <p>Добавьте первый вопрос — он будет участвовать в случайной выборке при старте интервью.</p>
+      <button type="button" class="btn btn--accent" (click)="_onAdd()">
+        <app-icon name="plus" /> Добавить первый вопрос
+      </button>
+    </div>
+  } @else if (_rows().length === 0 && _store.questions().length > 0 && _store.editing() === null) {
+    <div class="q-list__empty q-list__empty--mini">
+      <p>В категории нет вопросов. Снимите фильтр или добавьте новый.</p>
+    </div>
+  }
+</div>

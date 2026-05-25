@@ -1,0 +1,91 @@
+<dialog #dialog class="dialog" (close)="_onNativeClose()">
+  <header class="dialog__head">
+    <div>
+      <h2 class="dialog__title">Хранилище</h2>
+      <p class="dialog__desc">
+        Подключите Dropbox, чтобы синхронизировать шаблоны и интервью между устройствами.
+      </p>
+    </div>
+    <button type="button" class="dialog__close" (click)="_close()" aria-label="Закрыть">
+      <app-icon name="x" />
+    </button>
+  </header>
+
+  <div class="dialog__body">
+    @for (p of _store.providers(); track p.kind) {
+      <app-provider-card
+        [state]="p"
+        [isActive]="_store.active() === p.kind"
+        (connectRequested)="_onConnect(p.kind)"
+        (disconnectRequested)="_onDisconnect(p.kind)"
+        (activateRequested)="_onActivate(p.kind)"
+      />
+    }
+
+    @if (_store.isConnected() && _store.activeProvider(); as active) {
+      <section class="status">
+        <header class="status__head">
+          <div class="status__label">Состояние</div>
+          <span class="status__badge" [attr.data-status]="_sync.status()">
+            @switch (_sync.status()) {
+              @case ('syncing') {
+                <span class="status__spinner"></span> Синхронизация…
+              }
+              @case ('error') {
+                <span class="status__dot status__dot--error"></span> Ошибка
+              }
+              @default {
+                <span class="status__dot"></span> Готово
+              }
+            }
+          </span>
+        </header>
+
+        <div class="status__row">
+          <span class="status__lbl">Файл данных</span>
+          <span class="status__val">{{ active.path }}/manifest.json</span>
+        </div>
+        <div class="status__row">
+          <span class="status__lbl">Версия</span>
+          <span class="status__val status__val--mono">v{{ _store.fileVersion() }}</span>
+        </div>
+        <div class="status__row">
+          <span class="status__lbl">Последняя синхронизация</span>
+          <span class="status__val">{{ active.lastSync | fmtDateTime }}</span>
+        </div>
+
+        @if (_sync.lastError(); as err) {
+          <p class="status__error">{{ err }}</p>
+        }
+
+        <div class="status__actions">
+          <button
+            type="button"
+            class="btn"
+            [disabled]="_sync.status() === 'syncing'"
+            (click)="_onSyncNow()"
+          >
+            <app-icon name="refresh" />
+            @if (_sync.status() === 'syncing') {
+              Синхронизация…
+            } @else {
+              Синхронизировать сейчас
+            }
+          </button>
+        </div>
+      </section>
+    }
+  </div>
+
+  <footer class="dialog__foot">
+    <span class="dialog__foot-hint">
+      <app-icon name="cloud" />
+      @if (_store.isConnected()) {
+        Активно: <strong>Dropbox</strong> · v{{ _store.fileVersion() }}
+      } @else {
+        Без подключения работа возможна, но только локально.
+      }
+    </span>
+    <button type="button" class="btn btn--primary" (click)="_close()">Готово</button>
+  </footer>
+</dialog>

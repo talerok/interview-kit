@@ -1,0 +1,15 @@
+<app-sidebar
+  [templatesCount]="_templates.count()"
+  [historyCount]="_interviews.completedCount()"
+  [cloudKind]="_cloud.activeProvider()?.kind ?? null"
+  [cloudFileVersion]="_cloud.fileVersion()"
+  [cloudSyncStatus]="_cloudSync.status()"
+  (cloudSettings)="_openCloud()"
+/>
+<main class="shell__content">
+  <router-outlet />
+</main>
+<app-cloud-settings-dialog
+  [open]="_cloudActions.isDialogOpen()"
+  (dismissed)="_closeCloud()"
+/>

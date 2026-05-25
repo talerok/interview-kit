@@ -1,0 +1,141 @@
+<header class="topbar">
+  <nav class="topbar__crumbs" aria-label="Breadcrumb">
+    <span>Библиотека</span>
+    <app-icon name="chevron-right" />
+    <span class="topbar__crumbs-current">История</span>
+  </nav>
+</header>
+
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1 class="page__title">История интервью</h1>
+      <p class="page__desc">
+        {{ _interviews.completedCount() }}
+        {{ _interviews.completedCount() | pluralRu: _interviewForms }}
+        @if (_interviews.completedCount() > 0) {
+          · средняя оценка {{ _avgTotal().toFixed(2) }}
+          · оценено {{ _totalAnswers() }} {{ _totalAnswers() | pluralRu: _answerForms }}
+        }
+      </p>
+    </div>
+  </header>
+
+  @if (_interviews.completedCount() === 0) {
+    <div class="empty">
+      <h2>Пока нет интервью</h2>
+      <p>Завершите первое интервью — оно появится здесь.</p>
+    </div>
+  } @else {
+    <div class="filter-bar">
+      <label class="search">
+        <app-icon name="search" />
+        <input
+          class="search__input"
+          type="search"
+          placeholder="Поиск по имени или позиции…"
+          [value]="_query()"
+          (input)="_onQueryInput($event)"
+        />
+        @if (_query().length > 0) {
+          <button type="button" class="search__clear" (click)="_clearQuery()" aria-label="Очистить">
+            <app-icon name="x" />
+          </button>
+        }
+      </label>
+    </div>
+
+    @if (!_hasResults()) {
+      <div class="empty empty--mini">
+        <p>Ничего не нашлось по запросу «{{ _query() }}».</p>
+      </div>
+    } @else {
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="th-cand">Кандидат</th>
+            <th>Позиция</th>
+            <th>Шаблон</th>
+            <th class="th-num">Вопросов</th>
+            <th>Оценка</th>
+            <th class="th-num">Дата</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of _pagedRows(); track row.interview.id) {
+            <tr class="row" tabindex="0" (click)="_open(row.interview.id)">
+              <td>
+                <div class="cell-cand">
+                  <div
+                    class="cell-cand__avatar"
+                    [style.background]="row.template?.color ?? 'var(--fg-faint)'"
+                  >{{ row.initials }}</div>
+                  <span>{{ row.interview.candidate.name }}</span>
+                </div>
+              </td>
+              <td class="cell-muted">{{ row.interview.candidate.position || '—' }}</td>
+              <td>
+                @if (row.template; as t) {
+                  <span
+                    class="chip"
+                    [style.color]="t.color"
+                    [style.background]="'oklch(from ' + t.color + ' l c h / 0.10)'"
+                  >
+                    <span class="chip__dot" [style.background]="t.color"></span>{{ t.name }}
+                  </span>
+                } @else {
+                  <span class="cell-muted">—</span>
+                }
+              </td>
+              <td class="cell-num cell-muted">{{ row.interview.answersCount }}</td>
+              <td>
+                <span class="score" [attr.data-band]="row.band">
+                  <span class="score__dot"></span>{{ row.interview.avg.toFixed(2) }}
+                </span>
+              </td>
+              <td class="cell-num cell-muted">{{ row.interview.candidate.date | fmtDate }}</td>
+              <td class="cell-actions">
+                <button
+                  type="button"
+                  class="row__delete"
+                  (click)="_delete(row.interview.id, $event)"
+                  aria-label="Удалить"
+                >
+                  <app-icon name="trash" />
+                </button>
+                <app-icon name="chevron-right" />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (_showPagination()) {
+        <nav class="pagination" aria-label="Постраничная навигация">
+          <button
+            type="button"
+            class="pagination__btn"
+            [disabled]="_currentPage() === 0"
+            (click)="_prevPage()"
+          >
+            <app-icon name="arrow-left" /> Назад
+          </button>
+          <span class="pagination__info">
+            Стр. <strong>{{ _currentPage() + 1 }}</strong> из {{ _pageCount() }}
+            · {{ _filteredRows().length }}
+            {{ _filteredRows().length | pluralRu: _interviewForms }}
+          </span>
+          <button
+            type="button"
+            class="pagination__btn"
+            [disabled]="_currentPage() >= _pageCount() - 1"
+            (click)="_nextPage()"
+          >
+            Вперёд <app-icon name="arrow-right" />
+          </button>
+        </nav>
+      }
+    }
+  }
+</section>

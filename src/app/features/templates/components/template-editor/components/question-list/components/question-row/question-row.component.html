@@ -1,0 +1,27 @@
+<article class="q-row" (click)="_onEdit()" tabindex="0">
+  <span class="q-row__num">#{{ (index() + 1).toString().padStart(2, '0') }}</span>
+  <div class="q-row__main">
+    <div class="q-row__text">{{ question().text }}</div>
+    <div class="q-row__meta">
+      @if (category(); as c) {
+        <span
+          class="chip"
+          [style.color]="c.color"
+          [style.background]="'oklch(from ' + c.color + ' l c h / 0.08)'"
+        >
+          <span class="chip__dot" [style.background]="c.color"></span>{{ c.label }}
+        </span>
+      } @else {
+        <span class="chip chip--muted">
+          <span class="chip__dot"></span>Без категории
+        </span>
+      }
+      <span class="q-row__weight" title="Вес вопроса">
+        <app-icon name="weight" /> ×{{ question().weight }}
+      </span>
+    </div>
+  </div>
+  <button class="q-row__delete" type="button" (click)="_onDelete($event)" aria-label="Удалить">
+    <app-icon name="trash" />
+  </button>
+</article>

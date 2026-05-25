@@ -1,0 +1,86 @@
+<form class="q-edit" (submit)="_onSubmit($event)">
+  <header class="q-edit__head">
+    <span class="q-edit__badge">
+      @if (mode() === 'new') {
+        <app-icon name="plus" /> Новый вопрос
+      } @else {
+        <app-icon name="edit" /> Редактирование
+      }
+    </span>
+    <button type="button" class="q-edit__close" (click)="_onCancel()" aria-label="Закрыть">
+      <app-icon name="x" />
+    </button>
+  </header>
+
+  <label class="field">
+    <span class="field__label">Текст вопроса *</span>
+    <textarea
+      class="input textarea"
+      [formField]="_form.text"
+      rows="3"
+      placeholder="Например: Объясните разницу между let, const и var."
+      autofocus
+    ></textarea>
+    @if (_form.text().touched() && _form.text().errors().length) {
+      <span class="field__error">{{ _form.text().errors()[0].message }}</span>
+    } @else {
+      <span class="field__hint">Минимум 3 символа.</span>
+    }
+  </label>
+
+  <div class="q-edit__grid">
+    <div class="field">
+      <span class="field__label">Категория</span>
+      @if (categories().length === 0) {
+        <span class="field__hint">Нет категорий. Добавьте слева — будете распределять вопросы.</span>
+      } @else {
+        <div class="cats">
+          <button
+            type="button"
+            class="cat"
+            [class.is-on]="_selectedCategory() === null"
+            (click)="_setCategory(null)"
+          >
+            <span class="cat__dot cat__dot--none"></span> Без категории
+          </button>
+          @for (c of categories(); track c.id) {
+            <button
+              type="button"
+              class="cat"
+              [class.is-on]="_selectedCategory()?.id === c.id"
+              [style.background]="_selectedCategory()?.id === c.id ? 'oklch(from ' + c.color + ' l c h / 0.14)' : null"
+              [style.color]="_selectedCategory()?.id === c.id ? c.color : null"
+              (click)="_setCategory(c.id)"
+            >
+              <span class="cat__dot" [style.background]="c.color"></span> {{ c.label }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="field">
+      <span class="field__label">Вес</span>
+      <div class="weights">
+        @for (w of _weights; track w) {
+          <button
+            type="button"
+            class="weight"
+            [class.is-on]="_model().weight === w"
+            [title]="w === 1 ? 'Низкий' : w === 2 ? 'Средний' : 'Высокий'"
+            (click)="_setWeight(w)"
+          >×{{ w }}</button>
+        }
+      </div>
+      <span class="field__hint">{{ _weightHint() }}</span>
+    </div>
+  </div>
+
+  <footer class="q-edit__foot">
+    <button type="button" class="btn" (click)="_onCancel()">Отмена</button>
+    <button type="submit" class="btn btn--accent" [disabled]="_form().invalid()">
+      <app-icon name="check" />
+      @if (mode() === 'new') { Добавить } @else { Сохранить }
+    </button>
+  </footer>
+</form>

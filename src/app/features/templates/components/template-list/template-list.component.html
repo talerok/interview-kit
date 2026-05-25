@@ -1,0 +1,52 @@
+<header class="topbar">
+  <nav class="topbar__crumbs" aria-label="Breadcrumb">
+    <span>Библиотека</span>
+    <app-icon name="chevron-right" />
+    <span class="topbar__crumbs-current">Шаблоны</span>
+  </nav>
+  <div class="topbar__actions">
+    <button class="btn btn--accent" type="button" (click)="_openCreate()">
+      <app-icon name="plus" /> Новый шаблон
+    </button>
+  </div>
+</header>
+
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1 class="page__title">Шаблоны интервью</h1>
+      <p class="page__desc">Наборы вопросов, разбитые по категориям. Создайте свой набор и используйте его при запуске интервью.</p>
+    </div>
+  </header>
+
+  @if (_store.isEmpty()) {
+    <div class="empty">
+      <div class="empty__art" aria-hidden="true">
+        <app-icon name="layers" />
+      </div>
+      <h2 class="empty__title">Пока нет шаблонов</h2>
+      <p class="empty__desc">Создайте первый шаблон — наберите вопросы по категориям, и можно проводить интервью.</p>
+      <button class="btn btn--accent btn--lg" type="button" (click)="_openCreate()">
+        <app-icon name="plus" /> Создать первый шаблон
+      </button>
+    </div>
+  } @else {
+    <div class="grid">
+      @for (t of _store.value(); track t.id) {
+        <app-template-card
+          [template]="t"
+          [categoryCount]="t.categoryCount"
+          [questionCount]="t.questionCount"
+          (open)="_openTemplate($event)"
+          (remove)="_removeTemplate($event)"
+        />
+      }
+    </div>
+  }
+</section>
+
+<app-template-create-dialog
+  [open]="_dialogOpen()"
+  (dismissed)="_closeCreate()"
+  (submitted)="_onCreate($event)"
+/>

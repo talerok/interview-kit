@@ -1,0 +1,54 @@
+<aside class="sidebar">
+  <header class="sidebar__workspace">
+    <div class="sidebar__logo" aria-hidden="true">IK</div>
+    <div class="sidebar__workspace-text">
+      <div class="sidebar__title">InterviewKit</div>
+      <div class="sidebar__sub">Личное пространство</div>
+    </div>
+    <button
+      class="sidebar__theme"
+      type="button"
+      (click)="_toggleTheme()"
+      [attr.aria-label]="_theme.value() === 'dark' ? 'Светлая тема' : 'Тёмная тема'"
+    >
+      @if (_theme.value() === 'dark') {
+        <app-icon name="sun" />
+      } @else {
+        <app-icon name="moon" />
+      }
+    </button>
+  </header>
+
+  <nav class="sidebar__nav">
+    <a class="sidebar__item" routerLink="/new" routerLinkActive="is-active">
+      <app-icon name="plus" />
+      <span>Новое интервью</span>
+      <span class="kbd">N</span>
+    </a>
+
+    <div class="sidebar__section">Библиотека</div>
+
+    <a class="sidebar__item" routerLink="/templates" routerLinkActive="is-active">
+      <app-icon name="layers" />
+      <span>Шаблоны</span>
+      <span class="sidebar__count">{{ templatesCount() }}</span>
+    </a>
+
+    <a class="sidebar__item" routerLink="/history" routerLinkActive="is-active">
+      <app-icon name="history" />
+      <span>История</span>
+      <span class="sidebar__count">{{ historyCount() }}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar__spacer"></div>
+
+  <footer class="sidebar__footer">
+    <app-cloud-card
+      [kind]="cloudKind()"
+      [fileVersion]="cloudFileVersion()"
+      [syncStatus]="cloudSyncStatus()"
+      (open)="_onCloudClick()"
+    />
+  </footer>
+</aside>

@@ -1,0 +1,36 @@
+<div class="hero">
+  <div class="hero__left">
+    <div class="hero__big">
+      {{ avg().toFixed(1) }}<span class="hero__of"> / 5</span>
+    </div>
+    <div class="hero__bars">
+      @for (slot of _scoreSlots; track slot) {
+        <div class="hero__bar" [title]="slot + ': ' + distribution()[slot - 1]">
+          <div
+            class="hero__bar-fill"
+            [style.height.%]="(distribution()[slot - 1] / _maxDist()) * 100"
+            [attr.data-score]="slot"
+          ></div>
+          <div class="hero__bar-lbl">{{ slot }}</div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="hero__info">
+    <div class="hero__label">Итоговая оценка</div>
+    <div class="hero__band">{{ _bandLabel() }}</div>
+    <div class="hero__sub">
+      {{ answered() }} оценено, {{ skipped() }} пропущено
+    </div>
+    <div class="hero__chips">
+      <span class="chip" [attr.data-band]="band()">
+        @switch (band()) {
+          @case ('hi') { Сильный }
+          @case ('mid') { Средний }
+          @case ('lo') { Слабый }
+        }
+      </span>
+    </div>
+  </div>
+</div>

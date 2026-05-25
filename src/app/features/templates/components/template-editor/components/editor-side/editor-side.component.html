@@ -1,0 +1,66 @@
+<aside class="side">
+  <header class="side__head">
+    <span class="side__label">Категории</span>
+    <button class="side__add" type="button" (click)="_onAdd()" aria-label="Добавить категорию">
+      <app-icon name="plus" />
+    </button>
+  </header>
+
+  <ul class="side__list">
+    <li>
+      <button
+        type="button"
+        class="side__item"
+        [class.is-active]="_store.filter() === null"
+        (click)="_selectAll()"
+      >
+        <span class="side__dot side__dot--all"></span>
+        <span class="side__item-label">Все вопросы</span>
+        <span class="side__count">{{ _store.questions().length }}</span>
+      </button>
+    </li>
+
+    @for (row of _rows(); track row.category.id) {
+      <li>
+        <button
+          type="button"
+          class="side__item"
+          [class.is-active]="_store.filter() === row.category.id"
+          (click)="_selectCategory(row.category.id)"
+        >
+          <span class="side__dot" [style.background]="row.category.color"></span>
+          <span class="side__item-label">{{ row.category.label }}</span>
+          <span class="side__count">{{ row.count }}</span>
+          <span class="side__row-actions">
+            <button
+              class="side__row-btn"
+              type="button"
+              title="Переименовать"
+              (click)="_onRename(row.category, $event)"
+            >
+              <app-icon name="edit" />
+            </button>
+            <button
+              class="side__row-btn side__row-btn--danger"
+              type="button"
+              title="Удалить"
+              (click)="_onDelete(row.category, $event)"
+            >
+              <app-icon name="trash" />
+            </button>
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+
+  @if (_store.categories().length === 0) {
+    <p class="side__empty">
+      Категорий ещё нет. Добавьте через «+» — будете фильтровать ими вопросы.
+    </p>
+  } @else {
+    <p class="side__hint">
+      {{ _store.categories().length }} {{ _store.categories().length | pluralRu: _categoryForms }}
+    </p>
+  }
+</aside>

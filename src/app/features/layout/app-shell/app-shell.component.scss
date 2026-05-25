@@ -1,0 +1,13 @@
+:host {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-block-size: 100dvh;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.shell__content {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}

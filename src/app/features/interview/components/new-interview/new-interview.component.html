@@ -1,0 +1,228 @@
+<header class="topbar">
+  <nav class="topbar__crumbs" aria-label="Breadcrumb">
+    <span class="topbar__crumbs-current">Новое интервью</span>
+  </nav>
+  <div class="topbar__actions">
+    <button type="button" class="btn" (click)="_onCancel()">
+      <app-icon name="x" /> Отмена
+    </button>
+    <button
+      type="button"
+      class="btn btn--accent btn--lg"
+      [disabled]="!_store.canStart()"
+      (click)="_onStart()"
+    >
+      <app-icon name="play" /> Начать
+    </button>
+  </div>
+</header>
+
+<section class="page">
+  <header class="page__header">
+    <h1 class="page__title">Новое интервью</h1>
+    <p class="page__desc">Выберите шаблон и количество вопросов. Вопросы будут выбраны случайно из включенных категорий.</p>
+  </header>
+
+  <div class="setup">
+    <div class="setup__main">
+
+      <div class="card">
+        <div class="card__head">
+          <div class="card__label">1. Тип интервью</div>
+          <div class="card__hint">
+            {{ _templates.count() }} {{ _templates.count() | pluralRu: _templateForms }}
+          </div>
+        </div>
+        @if (_templates.isEmpty()) {
+          <div class="card__empty">
+            Нет шаблонов. <a routerLink="/templates">Создайте первый</a>.
+          </div>
+        } @else {
+          <div class="tpl-select">
+            @for (t of _templates.value(); track t.id) {
+              <button
+                type="button"
+                class="tpl-opt"
+                [class.is-on]="_store.templateId() === t.id"
+                (click)="_selectTemplate(t.id)"
+              >
+                <div class="tpl-opt__head">
+                  <span
+                    class="tpl-opt__mark"
+                    [style.background]="'oklch(from ' + t.color + ' l c h / 0.12)'"
+                    [style.color]="t.color"
+                  >{{ t.code }}</span>
+                  <span class="tpl-opt__name">{{ t.name }}</span>
+                </div>
+                <div class="tpl-opt__meta">
+                  {{ t.questionCount }} {{ t.questionCount | pluralRu: _questionForms }}
+                  · {{ t.categoryCount }} {{ t.categoryCount | pluralRu: _categoryForms }}
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="card">
+        <div class="card__head">
+          <div class="card__label">2. Количество вопросов</div>
+          <div class="card__hint">из {{ _store.availableCount() }} доступных</div>
+        </div>
+        <div class="stepper">
+          <button
+            type="button"
+            class="stepper__btn"
+            [disabled]="_store.count() <= 1"
+            (click)="_decCount()"
+          >−</button>
+          <span class="stepper__value">{{ _store.effectiveCount() }}</span>
+          <button
+            type="button"
+            class="stepper__btn"
+            [disabled]="_store.effectiveCount() >= _store.availableCount()"
+            (click)="_incCount()"
+          >+</button>
+          <span class="stepper__hint">
+            ≈{{ _estimatedMin() }} мин · {{ _store.effectiveCount() }}
+            {{ _store.effectiveCount() | pluralRu: _questionForms }}
+          </span>
+          <span class="stepper__spacer"></span>
+          <div class="stepper__presets">
+            @for (p of _countPresets; track p) {
+              <button
+                type="button"
+                class="btn btn--sm"
+                [class.btn--accent]="_store.effectiveCount() === p"
+                [disabled]="p > _store.availableCount()"
+                (click)="_setCount(p)"
+              >{{ p }}</button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head">
+          <div class="card__label">3. Категории вопросов</div>
+          @if (_store.categories().length > 0) {
+            <button class="card__action" type="button" (click)="_toggleAllCategories()">
+              @if (_store.effectiveActiveCategoryIds().length === _store.categories().length) {
+                Снять все
+              } @else {
+                Выбрать все
+              }
+            </button>
+          }
+        </div>
+        @if (_store.categories().length === 0) {
+          <div class="card__empty">
+            У выбранного шаблона нет категорий.
+          </div>
+        } @else {
+          <div class="cats">
+            @for (c of _store.categories(); track c.id) {
+              <button
+                type="button"
+                class="cat"
+                [class.is-on]="_isCategoryActive(c.id)"
+                [style.background]="_isCategoryActive(c.id) ? 'oklch(from ' + c.color + ' l c h / 0.14)' : null"
+                [style.color]="_isCategoryActive(c.id) ? c.color : null"
+                (click)="_toggleCategory(c.id)"
+              >
+                <span class="cat__dot" [style.background]="c.color"></span>
+                {{ c.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="card">
+        <div class="card__label">4. Кандидат</div>
+        <div class="cand-grid">
+          <label class="field">
+            <span class="field__label"><app-icon name="user" /> Имя *</span>
+            <input
+              class="input"
+              type="text"
+              placeholder="Иван Петров"
+              [value]="_store.candidate().name"
+              (input)="_onCandidateName($event)"
+            />
+          </label>
+          <label class="field">
+            <span class="field__label"><app-icon name="briefcase" /> Позиция</span>
+            <input
+              class="input"
+              type="text"
+              placeholder="Senior Engineer"
+              [value]="_store.candidate().position"
+              (input)="_onCandidatePosition($event)"
+            />
+          </label>
+        </div>
+        <label class="field cand-grid__date">
+          <span class="field__label"><app-icon name="calendar" /> Дата</span>
+          <input
+            class="input"
+            type="date"
+            [value]="_store.candidate().date"
+            (input)="_onCandidateDate($event)"
+          />
+        </label>
+      </div>
+
+    </div>
+
+    <aside class="setup__aside">
+      <div class="summary">
+        <div class="summary__label">Сводка</div>
+        <div class="summary__row">
+          <span class="summary__lbl">Тип</span>
+          <span class="summary__val">{{ _selectedTemplate()?.name ?? '—' }}</span>
+        </div>
+        <div class="summary__row">
+          <span class="summary__lbl">Кандидат</span>
+          <span class="summary__val">{{ _store.candidate().name || '— не указан —' }}</span>
+        </div>
+        <div class="summary__row">
+          <span class="summary__lbl">Позиция</span>
+          <span class="summary__val">{{ _store.candidate().position || '—' }}</span>
+        </div>
+        <div class="summary__row">
+          <span class="summary__lbl">Дата</span>
+          <span class="summary__val">{{ _store.candidate().date | fmtDate }}</span>
+        </div>
+        <hr class="summary__divider" />
+        <div class="summary__row">
+          <span class="summary__lbl">Вопросов</span>
+          <span class="summary__val summary__val--mono">{{ _store.effectiveCount() }}</span>
+        </div>
+        <div class="summary__row">
+          <span class="summary__lbl">Категорий</span>
+          <span class="summary__val summary__val--mono">
+            {{ _store.effectiveActiveCategoryIds().length }} / {{ _store.categories().length }}
+          </span>
+        </div>
+        <div class="summary__row">
+          <span class="summary__lbl">Длительность</span>
+          <span class="summary__val summary__val--mono">≈{{ _estimatedMin() }} мин</span>
+        </div>
+        <hr class="summary__divider" />
+        <div class="summary__note">
+          <app-icon name="shuffle" />
+          <span>Случайный выбор из {{ _store.availableCount() }} вопросов</span>
+        </div>
+        <button
+          type="button"
+          class="btn btn--accent btn--lg summary__cta"
+          [disabled]="!_store.canStart()"
+          (click)="_onStart()"
+        >
+          <app-icon name="play" /> Начать интервью
+        </button>
+      </div>
+    </aside>
+  </div>
+</section>

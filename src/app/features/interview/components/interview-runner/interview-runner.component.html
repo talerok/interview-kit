@@ -1,0 +1,164 @@
+@if (!_store.isLoaded()) {
+  <div class="loading">Загрузка интервью…</div>
+} @else if (_notFound()) {
+  <div class="empty">
+    <h1>Интервью не найдено</h1>
+    <a class="btn" routerLink="/templates">К списку шаблонов</a>
+  </div>
+} @else if (_store.interview(); as interview) {
+  <header class="runner-header">
+    <div class="runner-header__cand">
+      <div class="runner-header__name">{{ interview.candidate.name || 'Без имени' }}</div>
+      <div class="runner-header__meta">
+        <span>{{ interview.candidate.position || '—' }}</span>
+        <span class="sep">·</span>
+        <span>{{ interview.candidate.date | fmtDate }}</span>
+      </div>
+    </div>
+
+    <div class="runner-header__prog">
+      <span class="runner-header__answered">
+        <app-icon name="check-circle" />
+        {{ _store.answeredCount() }}
+        {{ _store.answeredCount() | pluralRu: _answerForms }}
+      </span>
+      <div class="prog-bar">
+        @for (a of _store.answers(); track a.id) {
+          <span
+            class="prog-bar__chunk"
+            [class.is-answered]="a.score !== null && !a.skipped"
+            [class.is-skipped]="a.skipped"
+          ></span>
+        }
+      </div>
+      <span class="runner-header__percent">{{ _store.progressPercent() }}%</span>
+    </div>
+
+    <div class="runner-header__actions">
+      <button class="btn btn--ghost" type="button" (click)="_onCancel()">
+        <app-icon name="x" /> Отменить
+      </button>
+      <button class="btn btn--accent" type="button" (click)="_onFinish()">
+        <app-icon name="check" /> Завершить
+      </button>
+    </div>
+  </header>
+
+  <div class="runner-body">
+    <main class="stage">
+      @if (_store.currentAnswer(); as answer) {
+        <div class="q-pos">
+          <span class="q-pos__num">{{ (_store.idx() + 1).toString().padStart(2, '0') }}</span>
+          <span class="q-pos__sep">/</span>
+          <span class="q-pos__total">{{ _store.totalCount().toString().padStart(2, '0') }}</span>
+          <span class="q-pos__weight">
+            <app-icon name="weight" /> вес ×{{ answer.questionWeight }}
+          </span>
+        </div>
+
+        <div class="q-prompt">{{ answer.questionText }}</div>
+
+        <div class="field">
+          <span class="field__label">Оценка ответа</span>
+          <div class="scale">
+            @for (s of _scores; track s) {
+              <button
+                type="button"
+                class="scale__btn"
+                [class.is-on]="answer.score === s"
+                (click)="_onScore(s)"
+              >
+                <span class="scale__num">{{ s }}</span>
+                <span class="scale__lbl">{{ _scoreLabels[s] }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field__label">
+            <app-icon name="notes" /> Комментарий
+            <span class="field__hint">не обязательно</span>
+          </span>
+          <textarea
+            class="input textarea"
+            rows="3"
+            placeholder="Заметки по ответу…"
+            [value]="answer.comment"
+            (input)="_onComment($event)"
+          ></textarea>
+        </div>
+      } @else {
+        <div class="stage__empty">
+          В интервью нет вопросов.
+        </div>
+      }
+    </main>
+
+    <aside class="aside">
+      <section class="aside__section">
+        <div class="aside__title">Прогресс</div>
+        <ul class="jump-list">
+          @for (a of _store.answers(); track a.id; let i = $index) {
+            <li>
+              <button
+                type="button"
+                class="jump"
+                [class.is-current]="_store.idx() === i"
+                (click)="_jumpTo(i)"
+              >
+                <span class="jump__num">{{ (i + 1).toString().padStart(2, '0') }}</span>
+                <span class="jump__text">{{ a.questionText.length > 38 ? (a.questionText.slice(0, 38) + '…') : a.questionText }}</span>
+                @if (a.skipped) {
+                  <span class="jump__badge jump__badge--skip">·</span>
+                } @else if (a.score !== null) {
+                  <span class="jump__badge" [attr.data-score]="a.score">{{ a.score }}</span>
+                } @else {
+                  <span class="jump__badge jump__badge--pending">·</span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="aside__section">
+        <div class="aside__title">
+          <app-icon name="notes" /> Заметки по кандидату
+        </div>
+        <textarea
+          class="input textarea"
+          rows="6"
+          placeholder="Общие впечатления, флаги, выводы…"
+          [value]="interview.notes"
+          (input)="_onNotes($event)"
+        ></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="runner-foot">
+    <div class="runner-foot__actions">
+      <button
+        type="button"
+        class="btn"
+        [disabled]="!_store.canPrev()"
+        (click)="_onPrev()"
+      >
+        <app-icon name="arrow-left" /> Назад
+      </button>
+      <button type="button" class="btn btn--ghost" (click)="_onSkip()">
+        <app-icon name="skip" /> Пропустить
+      </button>
+      @if (_store.canNext()) {
+        <button type="button" class="btn btn--accent" (click)="_onNext()">
+          Следующий <app-icon name="arrow-right" />
+        </button>
+      } @else {
+        <button type="button" class="btn btn--accent" (click)="_onFinish()">
+          <app-icon name="check" /> Завершить
+        </button>
+      }
+    </div>
+  </footer>
+}

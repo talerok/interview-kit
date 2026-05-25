@@ -1,0 +1,41 @@
+<button class="cloud-card" type="button" (click)="_activate()" [class.cloud-card--connected]="kind() !== null">
+  <span class="cloud-card__logo" [attr.data-kind]="kind()">
+    @if (kind() === 'dropbox') {
+      <app-icon name="dropbox" />
+    } @else {
+      <app-icon name="cloud" />
+    }
+  </span>
+  <span class="cloud-card__main">
+    <span class="cloud-card__title">
+      @if (kind() === 'dropbox') { Dropbox } @else { Хранилище }
+    </span>
+    <span class="cloud-card__sub">
+      @switch (syncStatus()) {
+        @case ('syncing') {
+          <span class="cloud-card__dot cloud-card__dot--syncing"></span>
+          Синхронизация…
+        }
+        @case ('error') {
+          <span class="cloud-card__dot cloud-card__dot--error"></span>
+          Ошибка синхронизации
+        }
+        @default {
+          <span class="cloud-card__dot" [class.is-off]="kind() === null"></span>
+          @if (kind() !== null) {
+            Подключено · v{{ fileVersion() }}
+          } @else {
+            Не подключено
+          }
+        }
+      }
+    </span>
+  </span>
+  <span class="cloud-card__action" aria-hidden="true">
+    @if (syncStatus() === 'syncing') {
+      <span class="cloud-card__spinner"></span>
+    } @else {
+      <app-icon name="chevron-right" />
+    }
+  </span>
+</button>
