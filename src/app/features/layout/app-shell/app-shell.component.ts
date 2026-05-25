@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterOutlet } from '@angular/router';
+import { switchMap } from 'rxjs';
 import { CloudSyncService } from '../../../api/cloud';
 import { CloudActions } from '../../../features/cloud-settings/models/state/cloud.actions';
 import { CloudStore } from '../../../features/cloud-settings/models/state/cloud.store';
@@ -37,9 +38,16 @@ export class AppShellComponent implements OnInit {
       .load()
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe();
+    // Hydrate cloud state from IDB, then immediately run a full sync (pull → push).
+    // On a fresh device/origin this is what brings cloud data into the local IDB;
+    // on a returning device it picks up changes made elsewhere since last visit.
+    // Errors inside syncNow are swallowed internally — they only set status='error'.
     this._cloudActions
       .load()
-      .pipe(takeUntilDestroyed(this._destroyRef))
+      .pipe(
+        switchMap(() => this._cloudActions.syncNow()),
+        takeUntilDestroyed(this._destroyRef),
+      )
       .subscribe();
   }
 
