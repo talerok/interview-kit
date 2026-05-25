@@ -11,6 +11,7 @@ import {
   Account,
   AccountId,
   AccountKind,
+  AccountsStore,
   LOCAL_ACCOUNT_ID,
   accountIdFor,
   dbNameFor,
@@ -22,6 +23,7 @@ import { CloudStore } from './cloud.store';
 @Injectable({ providedIn: 'root' })
 export class CloudActions {
   private readonly _store = inject(CloudStore);
+  private readonly _accounts = inject(AccountsStore);
   private readonly _appDb = inject(AppDb);
   private readonly _providers = inject(CLOUD_PROVIDERS);
   private readonly _sync = inject(CloudSyncService);
@@ -29,11 +31,9 @@ export class CloudActions {
   private readonly _interviewsActions = inject(InterviewsActions);
 
   constructor() {
-    // CloudStore hydrates itself from localStorage on construction, so the
-    // active account is already readable here.
     this._sync.setDelegate({
       activeProvider: () => {
-        const a = this._store.activeAccount();
+        const a = this._accounts.activeAccount();
         if (a === null || a.kind === 'local' || a.accessToken === null) return null;
         return this._providerOf(a.kind);
       },
@@ -79,8 +79,8 @@ export class CloudActions {
    * and (for cloud accounts) runs a full sync.
    */
   activate(id: AccountId): Observable<void> {
-    if (this._store.activeId() === id) return of(undefined);
-    this._store.setActiveId(id);
+    if (this._accounts.activeId() === id) return of(undefined);
+    this._accounts.setActive(id);
     return this._swapWorkspace(id);
   }
 
@@ -91,8 +91,8 @@ export class CloudActions {
    */
   disconnect(id: AccountId): Observable<void> {
     if (id === LOCAL_ACCOUNT_ID) return of(undefined);
-    const wasActive = this._store.activeId() === id;
-    this._store.removeAccount(id);
+    const wasActive = this._accounts.activeId() === id;
+    this._accounts.remove(id);
     if (wasActive) {
       return this._swapWorkspace(LOCAL_ACCOUNT_ID);
     }
@@ -100,7 +100,7 @@ export class CloudActions {
   }
 
   syncNow(): Observable<void> {
-    if (!this._store.isConnected()) return of(undefined);
+    if (!this._accounts.isConnected()) return of(undefined);
     return this._sync.syncNow();
   }
 
@@ -115,22 +115,19 @@ export class CloudActions {
       refreshToken: account.refreshToken,
       tokenExpiresAt: account.expiresAt,
     };
-    const wasAlreadyActive = this._store.activeId() === id;
-    this._store.upsertAccount(next);
+    const wasAlreadyActive = this._accounts.activeId() === id;
+    this._accounts.upsert(next);
 
     if (wasAlreadyActive) {
       // Same account — just refresh tokens in the same workspace and sync.
       return this._sync.syncNow();
     }
-    // New (or different) account — swap workspaces.
-    this._store.setActiveId(id);
+    this._accounts.setActive(id);
     return this._swapWorkspace(id);
   }
 
   private _swapWorkspace(id: AccountId): Observable<void> {
     return defer(async () => {
-      // Reset cross-account state before the swap so stale signals don't
-      // briefly bleed through to the new workspace.
       this._store.resetFileVersion();
       this._store.setLastSync(null);
     }).pipe(
@@ -138,7 +135,7 @@ export class CloudActions {
       switchMap(() =>
         forkJoin([this._templatesActions.load(), this._interviewsActions.load()]),
       ),
-      switchMap(() => (this._store.isConnected() ? this._sync.syncNow() : of(undefined))),
+      switchMap(() => (this._accounts.isConnected() ? this._sync.syncNow() : of(undefined))),
       map(() => undefined),
       catchError((err) => {
         console.error('[cloud-actions] workspace swap failed:', err);
@@ -147,9 +144,7 @@ export class CloudActions {
     );
   }
 
-
   private _providerOf(kind: AccountKind): CloudProvider | null {
     return this._providers.find((p) => p.kind === kind) ?? null;
   }
 }
-

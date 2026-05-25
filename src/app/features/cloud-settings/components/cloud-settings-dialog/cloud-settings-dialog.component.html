@@ -13,8 +13,8 @@
 
   <div class="dialog__body">
     <ul class="accounts">
-      @for (acc of _store.accounts(); track acc.id) {
-        <li class="account" [class.account--active]="_store.activeId() === acc.id">
+      @for (acc of _accounts.accounts(); track acc.id) {
+        <li class="account" [class.account--active]="_accounts.activeId() === acc.id">
           <div class="account__icon">
             @if (acc.kind === 'local') {
               <app-icon name="notes" />
@@ -32,7 +32,7 @@
               }
             </div>
           </div>
-          @if (_store.activeId() === acc.id) {
+          @if (_accounts.activeId() === acc.id) {
             <span class="account__badge">Активен</span>
           } @else {
             <button type="button" class="btn btn--sm" (click)="_onActivate(acc.id)">
@@ -58,7 +58,7 @@
       <app-icon name="plus" /> Добавить Dropbox-аккаунт
     </button>
 
-    @if (_store.isConnected()) {
+    @if (_accounts.isConnected()) {
       <section class="status">
         <header class="status__head">
           <div class="status__label">Синхронизация</div>
@@ -112,8 +112,8 @@
   <footer class="dialog__foot">
     <span class="dialog__foot-hint">
       <app-icon name="cloud" />
-      @if (_store.isConnected()) {
-        Активно: <strong>{{ _store.activeAccount()?.label }}</strong> · v{{ _store.fileVersion() }}
+      @if (_accounts.isConnected()) {
+        Активно: <strong>{{ _accounts.activeAccount()?.label }}</strong> · v{{ _store.fileVersion() }}
       } @else {
         Работаете в локальном хранилище — без синхронизации.
       }

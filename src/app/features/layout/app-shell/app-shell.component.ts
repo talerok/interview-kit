@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterOutlet } from '@angular/router';
 import { CloudSyncService } from '../../../api/cloud';
+import { AccountsStore } from '../../../core/account';
 import { CloudActions } from '../../../features/cloud-settings/models/state/cloud.actions';
 import { CloudStore } from '../../../features/cloud-settings/models/state/cloud.store';
 import { CloudSettingsDialogComponent } from '../../../features/cloud-settings/components/cloud-settings-dialog/cloud-settings-dialog.component';
@@ -22,6 +23,7 @@ export class AppShellComponent implements OnInit {
   protected readonly _templates = inject(TemplatesStore);
   protected readonly _interviews = inject(InterviewsStore);
   protected readonly _cloud = inject(CloudStore);
+  protected readonly _accounts = inject(AccountsStore);
   protected readonly _cloudActions = inject(CloudActions);
   protected readonly _cloudSync = inject(CloudSyncService);
   private readonly _templatesActions = inject(TemplatesActions);

@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { CloudSyncService } from '../../../../api/cloud';
-import { AccountId } from '../../../../core/account';
+import { AccountId, AccountsStore } from '../../../../core/account';
 import { FmtDateTimePipe } from '../../../../shared/pipes';
 import { IconComponent } from '../../../../shared/ui/icon';
 import { CloudActions } from '../../models/state/cloud.actions';
@@ -28,6 +28,7 @@ export class CloudSettingsDialogComponent {
   readonly dismissed = output<void>();
 
   protected readonly _store = inject(CloudStore);
+  protected readonly _accounts = inject(AccountsStore);
   protected readonly _actions = inject(CloudActions);
   protected readonly _sync = inject(CloudSyncService);
 

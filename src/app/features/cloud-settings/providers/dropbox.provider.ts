@@ -13,8 +13,8 @@ import {
   generateCodeVerifier,
   generateState,
 } from '../../../shared/utils';
+import { AccountsStore } from '../../../core/account';
 import { environment } from '../../../../environments/environment';
-import { CloudStore } from '../models/state/cloud.store';
 
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize';
 const TOKEN_URL = 'https://api.dropbox.com/oauth2/token';
@@ -43,7 +43,7 @@ const aggregatePath = (kind: AggregateKind, id: string): string =>
 @Injectable({ providedIn: 'root' })
 export class DropboxProvider implements CloudProvider {
   private readonly _http = inject(HttpClient);
-  private readonly _cloudStore = inject(CloudStore);
+  private readonly _accounts = inject(AccountsStore);
 
   readonly kind = 'dropbox' as const;
   readonly label = 'Dropbox';
@@ -203,7 +203,7 @@ export class DropboxProvider implements CloudProvider {
   }
 
   private async _validToken(): Promise<string> {
-    const account = this._cloudStore.activeAccount();
+    const account = this._accounts.activeAccount();
     if (account === null || account.kind !== 'dropbox' || account.accessToken === null) {
       throw new Error('Dropbox не подключён.');
     }
@@ -226,7 +226,7 @@ export class DropboxProvider implements CloudProvider {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }),
     );
-    this._cloudStore.upsertAccount({
+    this._accounts.upsert({
       ...account,
       accessToken: refreshed.access_token,
       tokenExpiresAt: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
@@ -236,7 +236,7 @@ export class DropboxProvider implements CloudProvider {
   }
 
   private _token(): string | null {
-    return this._cloudStore.activeAccount()?.accessToken ?? null;
+    return this._accounts.activeAccount()?.accessToken ?? null;
   }
 
   private _isNotFound(error: unknown): boolean {
