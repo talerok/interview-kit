@@ -60,17 +60,11 @@ export class CloudSettingsDialogComponent {
   }
 
   protected _onActivate(id: AccountId): void {
-    this._actions
-      .activate(id)
-      .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe();
+    this._actions.activate(id);
   }
 
   protected _onDisconnect(id: AccountId): void {
-    this._actions
-      .disconnect(id)
-      .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe();
+    this._actions.disconnect(id);
   }
 
   protected _onSyncNow(): void {

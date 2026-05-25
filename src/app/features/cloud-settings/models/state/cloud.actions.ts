@@ -1,12 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { EMPTY, Observable, catchError, defer, forkJoin, map, of, switchMap } from 'rxjs';
+import { EMPTY, Observable, of, switchMap } from 'rxjs';
 import {
   CLOUD_PROVIDERS,
   CloudAccount,
   CloudProvider,
   CloudSyncService,
 } from '../../../../api/cloud';
-import { AppDb } from '../../../../api/storage';
 import {
   Account,
   AccountId,
@@ -14,21 +13,22 @@ import {
   AccountsStore,
   LOCAL_ACCOUNT_ID,
   accountIdFor,
-  dbNameFor,
 } from '../../../../core/account';
-import { InterviewsActions } from '../../../interview/models/state/interviews.actions';
-import { TemplatesActions } from '../../../templates/models/state/templates.actions';
+import { WorkspaceService } from '../../../../core/workspace';
 import { CloudStore } from './cloud.store';
 
+/**
+ * OAuth + cloud-sync facade. Identity mutations (upsert, setActive, remove)
+ * go directly to AccountsStore; WorkspaceService picks them up and swaps
+ * the workspace DB. CloudActions itself never reaches into other features.
+ */
 @Injectable({ providedIn: 'root' })
 export class CloudActions {
   private readonly _store = inject(CloudStore);
   private readonly _accounts = inject(AccountsStore);
-  private readonly _appDb = inject(AppDb);
+  private readonly _workspace = inject(WorkspaceService);
   private readonly _providers = inject(CLOUD_PROVIDERS);
   private readonly _sync = inject(CloudSyncService);
-  private readonly _templatesActions = inject(TemplatesActions);
-  private readonly _interviewsActions = inject(InterviewsActions);
 
   constructor() {
     this._sync.setDelegate({
@@ -41,10 +41,10 @@ export class CloudActions {
         this._store.setLastSync(new Date().toISOString());
         return of(undefined);
       },
-      onDataPulled: () =>
-        forkJoin([this._templatesActions.load(), this._interviewsActions.load()]).pipe(
-          map(() => undefined),
-        ),
+      onDataPulled: () => {
+        this._workspace.notifyExternalWrite();
+        return of(undefined);
+      },
       onVersionSynced: (version) => {
         this._store.setFileVersion(version);
       },
@@ -64,7 +64,7 @@ export class CloudActions {
     );
   }
 
-  /** OAuth callback: exchange code for tokens, then add/activate the account. */
+  /** OAuth callback: exchange code for tokens, then upsert + activate. */
   finalizeOAuth(kind: Exclude<AccountKind, 'local'>, params: URLSearchParams): Observable<void> {
     const provider = this._providerOf(kind);
     if (provider === null) return EMPTY;
@@ -74,29 +74,22 @@ export class CloudActions {
   }
 
   /**
-   * Switch the active workspace to a different account. Closes the current
-   * IDB connection, opens the new one, reloads feature stores from disk,
-   * and (for cloud accounts) runs a full sync.
+   * Switch the active workspace. WorkspaceService observes activeId and
+   * does the heavy lifting (swap DB, reload, sync).
    */
-  activate(id: AccountId): Observable<void> {
-    if (this._accounts.activeId() === id) return of(undefined);
+  activate(id: AccountId): void {
     this._accounts.setActive(id);
-    return this._swapWorkspace(id);
   }
 
   /**
    * Disconnect a cloud account: drop tokens and remove from the registry.
    * The account's IDB is left intact so reconnecting later resurfaces the
-   * same data. If the disconnected account was active, fall back to local.
+   * same data. If the disconnected account was active, AccountsStore falls
+   * back to the local workspace, which WorkspaceService then picks up.
    */
-  disconnect(id: AccountId): Observable<void> {
-    if (id === LOCAL_ACCOUNT_ID) return of(undefined);
-    const wasActive = this._accounts.activeId() === id;
+  disconnect(id: AccountId): void {
+    if (id === LOCAL_ACCOUNT_ID) return;
     this._accounts.remove(id);
-    if (wasActive) {
-      return this._swapWorkspace(LOCAL_ACCOUNT_ID);
-    }
-    return of(undefined);
   }
 
   syncNow(): Observable<void> {
@@ -119,29 +112,12 @@ export class CloudActions {
     this._accounts.upsert(next);
 
     if (wasAlreadyActive) {
-      // Same account — just refresh tokens in the same workspace and sync.
+      // Same account — tokens were just refreshed in-place. Trigger a sync.
       return this._sync.syncNow();
     }
+    // Setting active fires WorkspaceService's swap → open new DB → syncNow.
     this._accounts.setActive(id);
-    return this._swapWorkspace(id);
-  }
-
-  private _swapWorkspace(id: AccountId): Observable<void> {
-    return defer(async () => {
-      this._store.resetFileVersion();
-      this._store.setLastSync(null);
-    }).pipe(
-      switchMap(() => this._appDb.open(dbNameFor(id))),
-      switchMap(() =>
-        forkJoin([this._templatesActions.load(), this._interviewsActions.load()]),
-      ),
-      switchMap(() => (this._accounts.isConnected() ? this._sync.syncNow() : of(undefined))),
-      map(() => undefined),
-      catchError((err) => {
-        console.error('[cloud-actions] workspace swap failed:', err);
-        return of(undefined);
-      }),
-    );
+    return of(undefined);
   }
 
   private _providerOf(kind: AccountKind): CloudProvider | null {
