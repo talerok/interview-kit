@@ -24,10 +24,6 @@ export class TemplatesActions {
   private readonly _repo = inject(TemplateRepo);
   private readonly _cloudSync = inject(CloudSyncService);
 
-  load(): Observable<readonly Template[]> {
-    return this._repo.list().pipe(tap((items) => this._store.set(items)));
-  }
-
   create(input: CreateTemplateInput): Observable<Template> {
     const aggregate = this._buildNewAggregate(input);
     return this._repo.createAggregate(aggregate).pipe(

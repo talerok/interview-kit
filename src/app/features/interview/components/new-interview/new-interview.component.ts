@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  OnInit,
   computed,
   inject,
 } from '@angular/core';
@@ -10,8 +9,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { IconComponent } from '../../../../shared/ui/icon';
 import { PluralRuPipe, FmtDatePipe } from '../../../../shared/pipes';
+import { explicitEffect } from '../../../../shared/utils';
 import { CategoryId, TemplateId } from '../../../templates/interfaces/template';
-import { TemplatesActions } from '../../../templates/models/state/templates.actions';
 import { TemplatesStore } from '../../../templates/models/state/templates.store';
 import { NewInterviewActions } from './models/state/new-interview.actions';
 import { NewInterviewStore } from './models/state/new-interview.store';
@@ -24,11 +23,10 @@ import { NewInterviewStore } from './models/state/new-interview.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [NewInterviewStore, NewInterviewActions],
 })
-export class NewInterviewComponent implements OnInit {
+export class NewInterviewComponent {
   private readonly _router = inject(Router);
   private readonly _destroyRef = inject(DestroyRef);
   protected readonly _templates = inject(TemplatesStore);
-  protected readonly _templatesActions = inject(TemplatesActions);
   protected readonly _store = inject(NewInterviewStore);
   protected readonly _actions = inject(NewInterviewActions);
 
@@ -48,15 +46,14 @@ export class NewInterviewComponent implements OnInit {
     Math.round(this._store.effectiveCount() * this._minutesPerQuestionEstimate),
   );
 
-  ngOnInit(): void {
-    if (this._templates.isEmpty()) {
-      this._templatesActions
-        .load()
-        .pipe(takeUntilDestroyed(this._destroyRef))
-        .subscribe(() => this._maybeSelectFirst());
-      return;
-    }
-    this._maybeSelectFirst();
+  constructor() {
+    // Auto-pick the first template as soon as the list becomes non-empty.
+    // The store's rxResource loads on first read; this effect waits for that.
+    explicitEffect([this._templates.value], ([templates]) => {
+      if (templates.length === 0) return;
+      if (this._store.templateId() !== null) return;
+      this._selectTemplate(templates[0].id);
+    });
   }
 
   protected _selectTemplate(id: TemplateId): void {
@@ -111,16 +108,5 @@ export class NewInterviewComponent implements OnInit {
       .start()
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe((interview) => this._router.navigate(['/run', interview.id]));
-  }
-
-  private _maybeSelectFirst(): void {
-    if (this._store.templateId() !== null) {
-      return;
-    }
-    const first = this._templates.value()[0];
-    if (first === undefined) {
-      return;
-    }
-    this._selectTemplate(first.id);
   }
 }

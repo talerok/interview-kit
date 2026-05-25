@@ -11,10 +11,6 @@ export class InterviewsActions {
   private readonly _repo = inject(InterviewRepo);
   private readonly _cloudSync = inject(CloudSyncService);
 
-  load(): Observable<readonly Interview[]> {
-    return this._repo.list().pipe(tap((items) => this._store.set(items)));
-  }
-
   replaceInterview(interview: Interview): void {
     this._store.upsert(interview, (i) => i.id);
     this._cloudSync.markDirty({ kind: 'interview', id: interview.id });

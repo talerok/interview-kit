@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { IconComponent } from '../../../../shared/ui/icon';
@@ -15,17 +15,13 @@ import { TemplateCreateDialogComponent } from '../template-create-dialog/templat
   styleUrl: './template-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TemplateListComponent implements OnInit {
+export class TemplateListComponent {
   private readonly _router = inject(Router);
   private readonly _destroyRef = inject(DestroyRef);
   protected readonly _store = inject(TemplatesStore);
   protected readonly _actions = inject(TemplatesActions);
 
   protected readonly _dialogOpen = signal(false);
-
-  ngOnInit(): void {
-    this._actions.load().pipe(takeUntilDestroyed(this._destroyRef)).subscribe();
-  }
 
   protected _openTemplate(id: TemplateId): void {
     // TODO: route to editor when implemented

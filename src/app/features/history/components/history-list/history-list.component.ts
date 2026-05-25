@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  OnInit,
   computed,
   inject,
   signal,
@@ -16,7 +15,6 @@ import { Interview, InterviewId } from '../../../interview/interfaces/interview'
 import { InterviewsActions } from '../../../interview/models/state/interviews.actions';
 import { InterviewsStore } from '../../../interview/models/state/interviews.store';
 import { Template, TemplateId } from '../../../templates/interfaces/template';
-import { TemplatesActions } from '../../../templates/models/state/templates.actions';
 import { TemplatesStore } from '../../../templates/models/state/templates.store';
 
 interface HistoryRow {
@@ -35,13 +33,12 @@ const PAGE_SIZE = 10;
   styleUrl: './history-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HistoryListComponent implements OnInit {
+export class HistoryListComponent {
   private readonly _router = inject(Router);
   private readonly _destroyRef = inject(DestroyRef);
   protected readonly _interviews = inject(InterviewsStore);
   private readonly _interviewsActions = inject(InterviewsActions);
   protected readonly _templates = inject(TemplatesStore);
-  private readonly _templatesActions = inject(TemplatesActions);
 
   protected readonly _interviewForms = ['интервью', 'интервью', 'интервью'] as const;
   protected readonly _answerForms = ['ответ', 'ответа', 'ответов'] as const;
@@ -101,21 +98,6 @@ export class HistoryListComponent implements OnInit {
   protected readonly _totalAnswers = computed(() =>
     this._interviews.completed().reduce((s, i) => s + i.answersCount, 0),
   );
-
-  ngOnInit(): void {
-    if (this._interviews.isEmpty()) {
-      this._interviewsActions
-        .load()
-        .pipe(takeUntilDestroyed(this._destroyRef))
-        .subscribe();
-    }
-    if (this._templates.isEmpty()) {
-      this._templatesActions
-        .load()
-        .pipe(takeUntilDestroyed(this._destroyRef))
-        .subscribe();
-    }
-  }
 
   protected _onQueryInput(event: Event): void {
     this._query.set((event.target as HTMLInputElement).value);
