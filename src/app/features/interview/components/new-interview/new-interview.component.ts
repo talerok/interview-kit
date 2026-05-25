@@ -37,13 +37,16 @@ export class NewInterviewComponent implements OnInit {
   protected readonly _templateForms = ['шаблон', 'шаблона', 'шаблонов'] as const;
 
   protected readonly _countPresets = [5, 8, 10, 15] as const;
+  private readonly _minutesPerQuestionEstimate = 4.5;
 
   protected readonly _selectedTemplate = computed(() => {
     const id = this._store.templateId();
     return id === null ? null : this._templates.value().find((t) => t.id === id) ?? null;
   });
 
-  protected readonly _estimatedMin = computed(() => Math.round(this._store.effectiveCount() * 4.5));
+  protected readonly _estimatedMin = computed(() =>
+    Math.round(this._store.effectiveCount() * this._minutesPerQuestionEstimate),
+  );
 
   ngOnInit(): void {
     if (this._templates.isEmpty()) {

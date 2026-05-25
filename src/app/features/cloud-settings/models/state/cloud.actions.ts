@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, catchError, defer, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   CLOUD_PROVIDERS,
@@ -28,9 +28,6 @@ export class CloudActions {
   private readonly _templatesActions = inject(TemplatesActions);
   private readonly _interviewsActions = inject(InterviewsActions);
 
-  private readonly _dialogOpen = signal(false);
-  readonly isDialogOpen = this._dialogOpen.asReadonly();
-
   constructor() {
     // CloudStore hydrates itself from localStorage on construction, so the
     // active account is already readable here.
@@ -52,22 +49,6 @@ export class CloudActions {
         this._store.setFileVersion(version);
       },
     });
-  }
-
-  /**
-   * Hydrate and run a full sync for the currently-active account. Called
-   * from AppShell on bootstrap; the registry is already loaded in ctor.
-   */
-  load(): Observable<void> {
-    return of(undefined);
-  }
-
-  openDialog(): void {
-    this._dialogOpen.set(true);
-  }
-
-  closeDialog(): void {
-    this._dialogOpen.set(false);
   }
 
   /**

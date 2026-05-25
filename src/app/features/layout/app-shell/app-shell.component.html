@@ -10,6 +10,6 @@
   <router-outlet />
 </main>
 <app-cloud-settings-dialog
-  [open]="_cloudActions.isDialogOpen()"
+  [open]="_cloudDialogOpen()"
   (dismissed)="_closeCloud()"
 />

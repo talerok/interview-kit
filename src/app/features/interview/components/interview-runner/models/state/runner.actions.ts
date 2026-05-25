@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, map, tap } from 'rxjs';
 import { CloudSyncService } from '../../../../../../api/cloud';
+
+const MS_PER_MINUTE = 60_000;
 import {
   Answer,
   AnswerScore,
@@ -104,6 +106,6 @@ export class RunnerActions {
 
   private _computeDuration(): number {
     const started = this._store.startedAt();
-    return Math.max(1, Math.round((Date.now() - started) / 60000));
+    return Math.max(1, Math.round((Date.now() - started) / MS_PER_MINUTE));
   }
 }

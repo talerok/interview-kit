@@ -47,7 +47,6 @@ export class OAuthCallbackComponent implements OnInit {
         next: () => {
           this._status.set('success');
           this._message.set('Готово! Возвращаемся в приложение…');
-          this._actions.openDialog();
           setTimeout(() => void this._router.navigate(['/templates']), 600);
         },
         error: (err: unknown) => {

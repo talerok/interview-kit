@@ -96,7 +96,7 @@ export class ScoreProfileComponent {
     for (let i = 0; i < n; i++) {
       const a = -Math.PI / 2 + (i / n) * Math.PI * 2;
       const score = data[i]?.avg ?? 0;
-      const rr = (this._r * score) / 5;
+      const rr = (this._r * score) / LEVELS;
       result.push({
         x: this._cx + rr * Math.cos(a),
         y: this._cy + rr * Math.sin(a),
