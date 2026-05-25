@@ -49,13 +49,22 @@ describe('CloudStore', () => {
     expect(store.isConnected()).toBe(false);
   });
 
-  it('bumpFileVersion increments by 1', () => {
+  it('setFileVersion stores the cloud-wide manifest version', () => {
     TestBed.configureTestingModule({});
     const store = TestBed.inject(CloudStore);
     expect(store.fileVersion()).toBe(0);
-    store.bumpFileVersion();
-    store.bumpFileVersion();
-    expect(store.fileVersion()).toBe(2);
+    store.setFileVersion(5);
+    expect(store.fileVersion()).toBe(5);
+    store.setFileVersion(7);
+    expect(store.fileVersion()).toBe(7);
+  });
+
+  it('setFileVersion is idempotent when value is unchanged', () => {
+    TestBed.configureTestingModule({});
+    const store = TestBed.inject(CloudStore);
+    store.setFileVersion(5);
+    store.setFileVersion(5);
+    expect(store.fileVersion()).toBe(5);
   });
 
   it('providers() exposes a stable single-element list', () => {

@@ -32,13 +32,17 @@ export class CloudActions {
       },
       onSyncCompleted: (provider) => {
         this._store.setProvider(provider.kind, { lastSync: new Date().toISOString() });
-        this._store.bumpFileVersion();
         return this._repo.save(this._store.state());
       },
       onDataPulled: () =>
         forkJoin([this._templatesActions.load(), this._interviewsActions.load()]).pipe(
           map(() => undefined),
         ),
+      onVersionSynced: (version) => {
+        // Cloud-wide counter from manifest.version — identical across all
+        // devices synced to the same account.
+        this._store.setFileVersion(version);
+      },
     });
   }
 

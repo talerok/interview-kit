@@ -59,6 +59,12 @@ export interface CloudSyncDelegate {
    * reload from disk. Optional — when omitted, callers must refresh manually.
    */
   readonly onDataPulled?: () => Observable<void>;
+  /**
+   * Called when a fresh cloud manifest version is observed (after pull) or
+   * written (after push). Lets the UI surface a counter that's identical
+   * across all devices synced to the same account.
+   */
+  readonly onVersionSynced?: (version: number) => void;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -136,6 +142,8 @@ export class CloudSyncService {
   private async _pullInner(provider: CloudProvider): Promise<void> {
     const manifest = await firstValue(provider.fetchManifest());
     if (manifest === null) return;
+
+    this._delegate?.onVersionSynced?.(manifest.version ?? 0);
 
     const localRevs = await this._readLocalRevs();
     let didWrite = false;
@@ -318,6 +326,12 @@ export class CloudSyncService {
   // ───────── push ─────────
 
   private async _pushInner(provider: CloudProvider): Promise<void> {
+    // Read the cloud's current manifest version so we can monotonically
+    // increment it. Concurrent pushes from two devices on the same account
+    // will race here and the later writer wins — accepted limitation.
+    const current = await firstValue(provider.fetchManifest());
+    const nextVersion = (current?.version ?? 0) + 1;
+
     const snapshot = await this._readSnapshot();
     const entries: ManifestEntryDto[] = [];
 
@@ -374,10 +388,12 @@ export class CloudSyncService {
 
     const manifest: ManifestDto = {
       schemaVersion: MANIFEST_SCHEMA_VERSION,
+      version: nextVersion,
       updatedAt: new Date().toISOString(),
       entries,
     };
     await firstValue(provider.pushManifest(manifest));
+    this._delegate?.onVersionSynced?.(nextVersion);
 
     const completed = this._delegate?.onSyncCompleted(provider);
     if (completed) {

@@ -51,7 +51,8 @@ export class CloudStore extends EntityStore<CloudState> {
     this.patch({ active: kind });
   }
 
-  bumpFileVersion(): void {
-    this.patch({ fileVersion: this.state().fileVersion + 1 });
+  setFileVersion(version: number): void {
+    if (this.state().fileVersion === version) return;
+    this.patch({ fileVersion: version });
   }
 }
