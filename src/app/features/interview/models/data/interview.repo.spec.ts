@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AppDb } from '../../../../api/storage';
+import { AppDb, STORES, TombstoneDto, tombstoneKey } from '../../../../api/storage';
 import { createFakeAppDb } from '../../../../api/storage/testing/fake-app-db';
 import { newId } from '../../../../shared/utils';
 import {
@@ -55,16 +55,26 @@ const buildAggregate = (
 
 describe('InterviewRepo', () => {
   let repo: InterviewRepo;
+  let appDb: AppDb;
   let iid: InterviewId;
 
   beforeEach(async () => {
-    const appDb = await createFakeAppDb();
+    appDb = await createFakeAppDb();
     TestBed.configureTestingModule({ providers: [{ provide: AppDb, useValue: appDb }] });
     repo = TestBed.inject(InterviewRepo);
 
     iid = newId<'InterviewId'>();
     await firstValueFrom(repo.createAggregate(buildAggregate(iid, 3)));
   });
+
+  const readTombstone = async (id: string): Promise<TombstoneDto | undefined> => {
+    const tx = appDb.database.transaction(STORES.tombstones, 'readonly');
+    const t = await tx.objectStore<TombstoneDto>(STORES.tombstones).get(
+      tombstoneKey('interview', id),
+    );
+    await tx.done;
+    return t;
+  };
 
   it('list() returns persisted interviews', async () => {
     const list = await firstValueFrom(repo.list());
@@ -143,6 +153,20 @@ describe('InterviewRepo', () => {
   });
 
   describe('delete', () => {
+    it('writes a tombstone with rev = (last interview rev) + 1', async () => {
+      const { answers } = (await firstValueFrom(repo.get(iid)))!;
+      const { interview } = await firstValueFrom(
+        repo.updateAnswer({ ...answers[0], score: 5 }),
+      );
+      await firstValueFrom(repo.delete(iid));
+
+      const tomb = await readTombstone(iid);
+      expect(tomb).toBeDefined();
+      expect(tomb!.kind).toBe('interview');
+      expect(tomb!.id).toBe(iid);
+      expect(tomb!.rev).toBe(interview.rev + 1);
+    });
+
     it('removes the interview and all its answers', async () => {
       await firstValueFrom(repo.delete(iid));
       const missing = await firstValueFrom(repo.get(iid));

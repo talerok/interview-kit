@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AppDb } from '../../../../api/storage';
+import { AppDb, STORES, TombstoneDto, tombstoneKey } from '../../../../api/storage';
 import { createFakeAppDb } from '../../../../api/storage/testing/fake-app-db';
 import { newId } from '../../../../shared/utils';
 import {
@@ -37,16 +37,26 @@ const buildAggregate = (
 
 describe('TemplateRepo', () => {
   let repo: TemplateRepo;
+  let appDb: AppDb;
   let tid: TemplateId;
 
   beforeEach(async () => {
-    const appDb = await createFakeAppDb();
+    appDb = await createFakeAppDb();
     TestBed.configureTestingModule({ providers: [{ provide: AppDb, useValue: appDb }] });
     repo = TestBed.inject(TemplateRepo);
 
     tid = newId<'TemplateId'>();
     await firstValueFrom(repo.createAggregate(buildAggregate(tid)));
   });
+
+  const readTombstone = async (id: string): Promise<TombstoneDto | undefined> => {
+    const tx = appDb.database.transaction(STORES.tombstones, 'readonly');
+    const t = await tx.objectStore<TombstoneDto>(STORES.tombstones).get(
+      tombstoneKey('template', id),
+    );
+    await tx.done;
+    return t;
+  };
 
   it('list() returns persisted templates', async () => {
     const list = await firstValueFrom(repo.list());
@@ -190,6 +200,27 @@ describe('TemplateRepo', () => {
   });
 
   describe('delete', () => {
+    it('writes a tombstone with rev = (last template rev) + 1', async () => {
+      const { template: t1 } = await firstValueFrom(
+        repo.addCategory({ templateId: tid, label: 'X', color: '#1' }),
+      );
+      await firstValueFrom(repo.delete(tid));
+
+      const tomb = await readTombstone(tid);
+      expect(tomb).toBeDefined();
+      expect(tomb!.kind).toBe('template');
+      expect(tomb!.id).toBe(tid);
+      expect(tomb!.rev).toBe(t1.rev + 1);
+      expect(tomb!.deletedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('does NOT write a tombstone when deleting a never-existed template', async () => {
+      const ghost = newId<'TemplateId'>();
+      await firstValueFrom(repo.delete(ghost));
+      const tomb = await readTombstone(ghost);
+      expect(tomb).toBeUndefined();
+    });
+
     it('removes the template and all its categories + questions', async () => {
       const { category: cat } = await firstValueFrom(
         repo.addCategory({ templateId: tid, label: 'C', color: '#1' }),

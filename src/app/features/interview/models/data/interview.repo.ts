@@ -7,6 +7,8 @@ import {
   INDEXES,
   InterviewDto,
   STORES,
+  TombstoneDto,
+  tombstoneKey,
 } from '../../../../api/storage';
 import {
   Answer,
@@ -133,15 +135,29 @@ export class InterviewRepo {
   delete(id: InterviewId): Observable<void> {
     return defer(async () => {
       const tx = this._appDb.database.transaction(
-        [STORES.interviews, STORES.answers],
+        [STORES.interviews, STORES.answers, STORES.tombstones],
         'readwrite',
       );
+      const current = await tx.objectStore<InterviewDto>(STORES.interviews).get(id);
+
       const answersStore = tx.objectStore<AnswerDto>(STORES.answers);
       const keys = await promisifyRequest<IDBValidKey[]>(
         answersStore.raw.index(INDEXES.answers.byInterview).getAllKeys(id),
       );
       for (const k of keys) await answersStore.delete(k);
       await tx.objectStore<InterviewDto>(STORES.interviews).delete(id);
+
+      if (current) {
+        const tombstone: TombstoneDto = {
+          key: tombstoneKey('interview', id),
+          kind: 'interview',
+          id,
+          rev: current.rev + 1,
+          deletedAt: new Date().toISOString(),
+        };
+        await tx.objectStore<TombstoneDto>(STORES.tombstones).put(tombstone);
+      }
+
       await tx.done;
     });
   }

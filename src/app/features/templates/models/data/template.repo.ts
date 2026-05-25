@@ -8,6 +8,8 @@ import {
   QuestionDto,
   STORES,
   TemplateDto,
+  TombstoneDto,
+  tombstoneKey,
 } from '../../../../api/storage';
 import { newId } from '../../../../shared/utils';
 import { deriveTemplateCode } from '../../constants/template-presets.const';
@@ -247,9 +249,13 @@ export class TemplateRepo {
   delete(id: TemplateId): Observable<void> {
     return defer(async () => {
       const tx = this._appDb.database.transaction(
-        [STORES.templates, STORES.categories, STORES.questions],
+        [STORES.templates, STORES.categories, STORES.questions, STORES.tombstones],
         'readwrite',
       );
+      // Read the template's rev BEFORE deleting so the tombstone carries
+      // a strictly-greater rev for cross-device conflict resolution.
+      const current = await tx.objectStore<TemplateDto>(STORES.templates).get(id);
+
       const catsStore = tx.objectStore<CategoryDto>(STORES.categories);
       const catKeys = await promisifyRequest<IDBValidKey[]>(
         catsStore.raw.index(INDEXES.categories.byTemplate).getAllKeys(id),
@@ -263,6 +269,18 @@ export class TemplateRepo {
       for (const k of qKeys) await qsStore.delete(k);
 
       await tx.objectStore<TemplateDto>(STORES.templates).delete(id);
+
+      if (current) {
+        const tombstone: TombstoneDto = {
+          key: tombstoneKey('template', id),
+          kind: 'template',
+          id,
+          rev: current.rev + 1,
+          deletedAt: new Date().toISOString(),
+        };
+        await tx.objectStore<TombstoneDto>(STORES.tombstones).put(tombstone);
+      }
+
       await tx.done;
     });
   }

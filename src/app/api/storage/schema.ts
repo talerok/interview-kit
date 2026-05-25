@@ -5,6 +5,7 @@ export const STORES = {
   interviews: 'interviews',
   answers: 'answers',
   meta: 'meta',
+  tombstones: 'tombstones',
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -17,4 +18,4 @@ export const INDEXES = {
 } as const;
 
 export const DB_NAME = 'interviewkit';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
