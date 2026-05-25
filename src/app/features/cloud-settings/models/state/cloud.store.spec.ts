@@ -1,51 +1,86 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
-import { initialCloud } from '../../interfaces/cloud';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Account, LOCAL_ACCOUNT_ID } from '../../../../core/account';
 import { CloudStore } from './cloud.store';
 
+const dropboxAccount = (email: string, overrides: Partial<Account> = {}): Account => ({
+  id: `dropbox:${email}`,
+  kind: 'dropbox',
+  label: email,
+  email,
+  accessToken: 'tok',
+  refreshToken: 'rt',
+  tokenExpiresAt: null,
+  ...overrides,
+});
+
 describe('CloudStore', () => {
-  it('hydrates with the initial cloud state on construction', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('hydrates from localStorage (defaults to a single local account when empty)', () => {
     TestBed.configureTestingModule({});
     const store = TestBed.inject(CloudStore);
-    expect(store.state()).toEqual(initialCloud());
-    expect(store.active()).toBeNull();
-    expect(store.fileVersion()).toBe(0);
+    expect(store.accounts()).toHaveLength(1);
+    expect(store.activeId()).toBe(LOCAL_ACCOUNT_ID);
     expect(store.isConnected()).toBe(false);
-    expect(store.activeProvider()).toBeNull();
+    expect(store.activeAccount()?.kind).toBe('local');
   });
 
-  it('setActive() updates active provider key', () => {
+  it('upsertAccount adds a new account and persists', () => {
     TestBed.configureTestingModule({});
     const store = TestBed.inject(CloudStore);
-    store.setActive('dropbox');
-    expect(store.active()).toBe('dropbox');
-    expect(store.activeProvider()?.kind).toBe('dropbox');
+    store.upsertAccount(dropboxAccount('a@b.com'));
+    expect(store.accounts()).toHaveLength(2);
+    expect(store.cloudAccounts()).toHaveLength(1);
+
+    const raw = localStorage.getItem('interviewkit:registry');
+    expect(raw).not.toBeNull();
+    expect(JSON.parse(raw!).accounts).toHaveLength(2);
   });
 
-  it('setProvider() patches a provider without touching others', () => {
+  it('upsertAccount replaces an existing account with the same id', () => {
     TestBed.configureTestingModule({});
     const store = TestBed.inject(CloudStore);
-    store.setProvider('dropbox', {
-      connected: true,
-      email: 'me@example.com',
-      accessToken: 'tk',
-    });
-    const provider = store.state().providers.dropbox;
-    expect(provider.connected).toBe(true);
-    expect(provider.email).toBe('me@example.com');
-    expect(provider.accessToken).toBe('tk');
-    // unchanged
-    expect(provider.path).toBe('/Apps/InterviewKit');
+    store.upsertAccount(dropboxAccount('a@b.com', { accessToken: 'old' }));
+    store.upsertAccount(dropboxAccount('a@b.com', { accessToken: 'new' }));
+    expect(store.accounts()).toHaveLength(2);
+    expect(store.cloudAccounts()[0].accessToken).toBe('new');
   });
 
-  it('isConnected reflects activeProvider.connected', () => {
+  it('setActiveId switches the active workspace', () => {
     TestBed.configureTestingModule({});
     const store = TestBed.inject(CloudStore);
-    store.setProvider('dropbox', { connected: true });
-    store.setActive('dropbox');
+    store.upsertAccount(dropboxAccount('a@b.com'));
+    store.setActiveId('dropbox:a@b.com');
+    expect(store.activeId()).toBe('dropbox:a@b.com');
     expect(store.isConnected()).toBe(true);
+  });
 
-    store.setActive(null);
+  it('removeAccount drops a cloud account and falls back to local when it was active', () => {
+    TestBed.configureTestingModule({});
+    const store = TestBed.inject(CloudStore);
+    store.upsertAccount(dropboxAccount('a@b.com'));
+    store.setActiveId('dropbox:a@b.com');
+    store.removeAccount('dropbox:a@b.com');
+    expect(store.cloudAccounts()).toHaveLength(0);
+    expect(store.activeId()).toBe(LOCAL_ACCOUNT_ID);
+  });
+
+  it('removeAccount refuses to drop the local account', () => {
+    TestBed.configureTestingModule({});
+    const store = TestBed.inject(CloudStore);
+    store.removeAccount(LOCAL_ACCOUNT_ID);
+    expect(store.accounts()).toHaveLength(1);
+  });
+
+  it('isConnected is false for the local-only workspace', () => {
+    TestBed.configureTestingModule({});
+    const store = TestBed.inject(CloudStore);
     expect(store.isConnected()).toBe(false);
   });
 
@@ -67,35 +102,11 @@ describe('CloudStore', () => {
     expect(store.fileVersion()).toBe(5);
   });
 
-  it('providers() exposes a stable single-element list', () => {
+  it('resetFileVersion drops to zero (used on account switch)', () => {
     TestBed.configureTestingModule({});
     const store = TestBed.inject(CloudStore);
-    const out = store.providers();
-    expect(out).toHaveLength(1);
-    expect(out[0].kind).toBe('dropbox');
-  });
-
-  it('hydrate() replaces the entire state', () => {
-    TestBed.configureTestingModule({});
-    const store = TestBed.inject(CloudStore);
-    const next = {
-      active: 'dropbox' as const,
-      fileVersion: 42,
-      providers: {
-        dropbox: {
-          kind: 'dropbox' as const,
-          connected: true,
-          email: 'a@b.com',
-          path: '/Custom',
-          lastSync: '2026-05-25T10:00:00.000Z',
-          accessToken: 'tk',
-          refreshToken: 'rt',
-          tokenExpiresAt: '2026-05-26T10:00:00.000Z',
-        },
-      },
-    };
-    store.hydrate(next);
-    expect(store.state()).toEqual(next);
-    expect(store.isConnected()).toBe(true);
+    store.setFileVersion(9);
+    store.resetFileVersion();
+    expect(store.fileVersion()).toBe(0);
   });
 });

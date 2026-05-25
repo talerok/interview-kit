@@ -9,17 +9,16 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { IconComponent } from '../../../../shared/ui/icon';
-import { FmtDateTimePipe } from '../../../../shared/pipes';
 import { CloudSyncService } from '../../../../api/cloud';
-import { CloudProviderKind } from '../../interfaces/cloud';
+import { AccountId } from '../../../../core/account';
+import { FmtDateTimePipe } from '../../../../shared/pipes';
+import { IconComponent } from '../../../../shared/ui/icon';
 import { CloudActions } from '../../models/state/cloud.actions';
 import { CloudStore } from '../../models/state/cloud.store';
-import { ProviderCardComponent } from './components/provider-card/provider-card.component';
 
 @Component({
   selector: 'app-cloud-settings-dialog',
-  imports: [IconComponent, FmtDateTimePipe, ProviderCardComponent],
+  imports: [IconComponent, FmtDateTimePipe],
   templateUrl: './cloud-settings-dialog.component.html',
   styleUrl: './cloud-settings-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,23 +51,23 @@ export class CloudSettingsDialogComponent {
     this.dismissed.emit();
   }
 
-  protected _onConnect(kind: CloudProviderKind): void {
+  protected _onAddDropbox(): void {
     this._actions
-      .connect(kind)
+      .connect('dropbox')
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe();
   }
 
-  protected _onDisconnect(kind: CloudProviderKind): void {
+  protected _onActivate(id: AccountId): void {
     this._actions
-      .disconnect(kind)
+      .activate(id)
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe();
   }
 
-  protected _onActivate(kind: CloudProviderKind): void {
+  protected _onDisconnect(id: AccountId): void {
     this._actions
-      .activate(kind)
+      .disconnect(id)
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe();
   }

@@ -203,22 +203,22 @@ export class DropboxProvider implements CloudProvider {
   }
 
   private async _validToken(): Promise<string> {
-    const state = this._cloudStore.state().providers.dropbox;
-    if (state.accessToken === null) {
+    const account = this._cloudStore.activeAccount();
+    if (account === null || account.kind !== 'dropbox' || account.accessToken === null) {
       throw new Error('Dropbox не подключён.');
     }
     const stillFresh =
-      state.tokenExpiresAt === null ||
-      Date.parse(state.tokenExpiresAt) - Date.now() > 60_000;
+      account.tokenExpiresAt === null ||
+      Date.parse(account.tokenExpiresAt) - Date.now() > 60_000;
     if (stillFresh) {
-      return state.accessToken;
+      return account.accessToken;
     }
-    if (state.refreshToken === null) {
+    if (account.refreshToken === null) {
       throw new Error('Срок действия токена истёк, повторите подключение.');
     }
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: state.refreshToken,
+      refresh_token: account.refreshToken,
       client_id: environment.cloud.dropbox.clientId,
     });
     const refreshed = await lastValueFrom(
@@ -226,16 +226,17 @@ export class DropboxProvider implements CloudProvider {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }),
     );
-    this._cloudStore.setProvider('dropbox', {
+    this._cloudStore.upsertAccount({
+      ...account,
       accessToken: refreshed.access_token,
       tokenExpiresAt: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-      refreshToken: refreshed.refresh_token ?? state.refreshToken,
+      refreshToken: refreshed.refresh_token ?? account.refreshToken,
     });
     return refreshed.access_token;
   }
 
   private _token(): string | null {
-    return this._cloudStore.state().providers.dropbox.accessToken;
+    return this._cloudStore.activeAccount()?.accessToken ?? null;
   }
 
   private _isNotFound(error: unknown): boolean {

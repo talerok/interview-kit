@@ -1,9 +1,9 @@
 <dialog #dialog class="dialog" (close)="_onNativeClose()">
   <header class="dialog__head">
     <div>
-      <h2 class="dialog__title">Хранилище</h2>
+      <h2 class="dialog__title">Аккаунты</h2>
       <p class="dialog__desc">
-        Подключите Dropbox, чтобы синхронизировать шаблоны и интервью между устройствами.
+        Каждый аккаунт — своё хранилище. Переключайтесь, не теряя данных. Cloud-аккаунты синхронизируют шаблоны и интервью между устройствами.
       </p>
     </div>
     <button type="button" class="dialog__close" (click)="_close()" aria-label="Закрыть">
@@ -12,20 +12,56 @@
   </header>
 
   <div class="dialog__body">
-    @for (p of _store.providers(); track p.kind) {
-      <app-provider-card
-        [state]="p"
-        [isActive]="_store.active() === p.kind"
-        (connectRequested)="_onConnect(p.kind)"
-        (disconnectRequested)="_onDisconnect(p.kind)"
-        (activateRequested)="_onActivate(p.kind)"
-      />
-    }
+    <ul class="accounts">
+      @for (acc of _store.accounts(); track acc.id) {
+        <li class="account" [class.account--active]="_store.activeId() === acc.id">
+          <div class="account__icon">
+            @if (acc.kind === 'local') {
+              <app-icon name="notes" />
+            } @else {
+              <app-icon name="cloud" />
+            }
+          </div>
+          <div class="account__info">
+            <div class="account__label">{{ acc.label }}</div>
+            <div class="account__sub">
+              @if (acc.kind === 'local') {
+                Только на этом устройстве
+              } @else {
+                Dropbox · {{ acc.email }}
+              }
+            </div>
+          </div>
+          @if (_store.activeId() === acc.id) {
+            <span class="account__badge">Активен</span>
+          } @else {
+            <button type="button" class="btn btn--sm" (click)="_onActivate(acc.id)">
+              Переключиться
+            </button>
+          }
+          @if (acc.kind !== 'local') {
+            <button
+              type="button"
+              class="account__remove"
+              (click)="_onDisconnect(acc.id)"
+              aria-label="Отключить"
+              title="Отключить"
+            >
+              <app-icon name="x" />
+            </button>
+          }
+        </li>
+      }
+    </ul>
 
-    @if (_store.isConnected() && _store.activeProvider(); as active) {
+    <button type="button" class="btn btn--ghost" (click)="_onAddDropbox()">
+      <app-icon name="plus" /> Добавить Dropbox-аккаунт
+    </button>
+
+    @if (_store.isConnected()) {
       <section class="status">
         <header class="status__head">
-          <div class="status__label">Состояние</div>
+          <div class="status__label">Синхронизация</div>
           <span class="status__badge" [attr.data-status]="_sync.status()">
             @switch (_sync.status()) {
               @case ('syncing') {
@@ -42,16 +78,12 @@
         </header>
 
         <div class="status__row">
-          <span class="status__lbl">Файл данных</span>
-          <span class="status__val">{{ active.path }}/manifest.json</span>
-        </div>
-        <div class="status__row">
           <span class="status__lbl">Версия</span>
           <span class="status__val status__val--mono">v{{ _store.fileVersion() }}</span>
         </div>
         <div class="status__row">
           <span class="status__lbl">Последняя синхронизация</span>
-          <span class="status__val">{{ active.lastSync | fmtDateTime }}</span>
+          <span class="status__val">{{ _store.lastSync() | fmtDateTime }}</span>
         </div>
 
         @if (_sync.lastError(); as err) {
@@ -81,9 +113,9 @@
     <span class="dialog__foot-hint">
       <app-icon name="cloud" />
       @if (_store.isConnected()) {
-        Активно: <strong>Dropbox</strong> · v{{ _store.fileVersion() }}
+        Активно: <strong>{{ _store.activeAccount()?.label }}</strong> · v{{ _store.fileVersion() }}
       } @else {
-        Без подключения работа возможна, но только локально.
+        Работаете в локальном хранилище — без синхронизации.
       }
     </span>
     <button type="button" class="btn btn--primary" (click)="_close()">Готово</button>

@@ -1,7 +1,7 @@
 <app-sidebar
   [templatesCount]="_templates.count()"
   [historyCount]="_interviews.completedCount()"
-  [cloudKind]="_cloud.activeProvider()?.kind ?? null"
+  [cloudKind]="_cloud.isConnected() ? 'dropbox' : null"
   [cloudFileVersion]="_cloud.fileVersion()"
   [cloudSyncStatus]="_cloudSync.status()"
   (cloudSettings)="_openCloud()"

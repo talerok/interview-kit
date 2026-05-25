@@ -4,6 +4,4 @@ export type { AggregateKind, ManifestDto, ManifestEntryDto } from './manifest.dt
 export { MANIFEST_SCHEMA_VERSION, emptyManifest } from './manifest.dto';
 export type { CloudAggregateDto, TemplateAggregateDto, InterviewAggregateDto } from './aggregate.dto';
 export { AGGREGATE_SCHEMA_VERSION } from './aggregate.dto';
-export { initialCloudState } from './cloud.dto';
-export type { CloudStateDto, CloudProviderStateDto } from './cloud.dto';
 export { CloudSyncService } from './cloud-sync.service';
