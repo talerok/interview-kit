@@ -43,6 +43,28 @@
     color: var(--fg-strong);
     line-height: var(--leading-snug);
     white-space: pre-wrap;
+
+    &--clamped {
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+
+  &__toggle {
+    align-self: flex-start;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    font-size: var(--text-xs);
+    color: var(--accent);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &__meta {

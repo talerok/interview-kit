@@ -1,7 +1,12 @@
 <article class="q-row" (click)="_onEdit()" tabindex="0">
   <span class="q-row__num">#{{ (index() + 1).toString().padStart(2, '0') }}</span>
   <div class="q-row__main">
-    <div class="q-row__text">{{ question().text }}</div>
+    <div class="q-row__text" [class.q-row__text--clamped]="_isLong() && !_expanded()">{{ question().text }}</div>
+    @if (_isLong()) {
+      <button type="button" class="q-row__toggle" (click)="_onToggle($event)">
+        @if (_expanded()) { Свернуть } @else { Показать полностью }
+      </button>
+    }
     <div class="q-row__meta">
       @if (category(); as c) {
         <span
