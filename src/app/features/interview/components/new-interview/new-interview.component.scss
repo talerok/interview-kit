@@ -518,6 +518,43 @@
     justify-content: center;
     margin-block-start: var(--space-2);
   }
+
+  &__breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  &__break-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm);
+  }
+
+  &__dot {
+    inline-size: 8px;
+    block-size: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  &__break-name {
+    color: var(--fg-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__break-cnt {
+    color: var(--fg-muted);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 .btn {
