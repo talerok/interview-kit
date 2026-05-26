@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FormField, form, minLength, required, submit } from '@angular/forms/signals';
 import { IconComponent } from '../../../../../../../../shared/ui/icon';
+import { explicitEffect } from '../../../../../../../../shared/utils';
 import {
   Category,
   CategoryId,
-  Question,
   QuestionWeight,
 } from '../../../../../../interfaces/template';
 
@@ -71,7 +71,12 @@ export class QuestionEditorComponent {
   });
 
   constructor() {
-    this._model.set(fromDraft(this.initial()));
+    // Signal-inputs aren't populated yet when the constructor body runs; reading
+    // `initial()` here would return null. An explicitEffect re-syncs the model
+    // as soon as the input lands (and again if the parent ever swaps drafts).
+    explicitEffect([this.initial], ([draft]) => {
+      this._model.set(fromDraft(draft));
+    });
   }
 
   protected _setCategory(id: CategoryId | null): void {
