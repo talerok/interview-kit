@@ -5,22 +5,15 @@ import { Router, RouterLink } from '@angular/router';
 import { FmtDatePipe, PluralRuPipe } from '../../../../shared/pipes';
 import { IconComponent } from '../../../../shared/ui/icon';
 import { explicitEffect } from '../../../../shared/utils';
-import { Category, CategoryId, TemplateId } from '../../../templates/interfaces/template';
+import { CategoryId, TemplateId } from '../../../templates/interfaces/template';
 import { TemplatesStore } from '../../../templates/models/state/templates.store';
 import { NewInterviewActions } from './models/state/new-interview.actions';
 import {
-  CategoryPick,
   NewInterviewStore,
   PickMode,
+  PickRow,
   RunOrder,
 } from './models/state/new-interview.store';
-
-interface PickRow {
-  readonly pick: CategoryPick;
-  readonly category: Category;
-  readonly available: number;
-  readonly effective: number;
-}
 
 @Component({
   selector: 'app-new-interview',
@@ -55,10 +48,7 @@ export class NewInterviewComponent {
     Math.round(this._store.effectiveTotal() * this._minutesPerQuestionEstimate),
   );
 
-  /** Render-ready pick rows joined with their category + available counts. */
-  protected readonly _rows = computed<readonly PickRow[]>(() =>
-    this._buildRows(this._store.picks(), this._store.categories()),
-  );
+  protected readonly _rows = this._store.pickRows;
 
   protected readonly _enabledRows = computed(() => this._rows().filter((r) => r.pick.enabled));
   protected readonly _enabledCount = computed(() => this._enabledRows().length);
@@ -66,25 +56,6 @@ export class NewInterviewComponent {
     const rows = this._rows();
     return rows.length > 0 && rows.every((r) => r.pick.enabled);
   });
-
-  private _buildRows(
-    picks: readonly CategoryPick[],
-    categories: readonly Category[],
-  ): readonly PickRow[] {
-    const categoryById = new Map(categories.map((c) => [c.id, c]));
-    const rows: PickRow[] = [];
-    for (const pick of picks) {
-      const category = categoryById.get(pick.categoryId);
-      if (category === undefined) continue;
-      rows.push({
-        pick,
-        category,
-        available: this._store.availableInCategory(pick.categoryId),
-        effective: this._store.effectivePickCount(pick),
-      });
-    }
-    return rows;
-  }
 
   constructor() {
     // Auto-pick the first template once they load

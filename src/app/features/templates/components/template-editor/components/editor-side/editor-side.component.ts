@@ -31,7 +31,7 @@ export class EditorSideComponent {
     const counts = this._store.questionCountByCategory();
     return this._store.categories().map((category) => ({
       category,
-      count: counts.get(category.id) ?? 0,
+      count: counts[category.id] ?? 0,
     }));
   });
 

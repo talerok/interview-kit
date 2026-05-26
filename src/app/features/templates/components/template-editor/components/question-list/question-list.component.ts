@@ -1,4 +1,4 @@
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { IconComponent } from '../../../../../../shared/ui/icon';
@@ -34,14 +34,14 @@ export class QuestionListComponent {
     if (filter === null) {
       return null;
     }
-    return this._store.categoriesMap().get(filter)?.label ?? null;
+    return this._store.categoryById()[filter]?.label ?? null;
   });
 
   protected readonly _rows = computed<readonly RenderRow[]>(() => {
-    const map = this._store.categoriesMap();
+    const byId = this._store.categoryById();
     return this._store.filteredQuestions().map((q, index) => ({
       question: q,
-      category: q.categoryId ? map.get(q.categoryId) ?? null : null,
+      category: q.categoryId ? (byId[q.categoryId] ?? null) : null,
       index,
     }));
   });
@@ -78,10 +78,8 @@ export class QuestionListComponent {
   protected _onDrop(event: CdkDragDrop<readonly RenderRow[]>): void {
     if (!this._canReorder()) return;
     if (event.previousIndex === event.currentIndex) return;
-    const rows = this._rows();
-    const next = rows.slice();
-    const [moved] = next.splice(event.previousIndex, 1);
-    next.splice(event.currentIndex, 0, moved);
+    const next = this._rows().slice();
+    moveItemInArray(next, event.previousIndex, event.currentIndex);
     const orderedIds = next.map((r) => r.question.id);
     this._actions
       .reorderQuestions(orderedIds)

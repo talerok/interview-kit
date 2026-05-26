@@ -1,5 +1,6 @@
 import { Injectable, Signal, computed, signal } from '@angular/core';
 import {
+  Category,
   CategoryId,
   Question,
   TemplateAggregate,
@@ -17,6 +18,16 @@ export interface CategoryPick {
   readonly mode: PickMode;
 }
 
+/** Render-ready row joining a pick with its category + computed counts. */
+export interface PickRow {
+  readonly pick: CategoryPick;
+  readonly category: Category;
+  readonly available: number;
+  readonly effective: number;
+}
+
+type QuestionsByCategory = Readonly<Record<string, readonly Question[]>>;
+
 const DEFAULT_PER_CATEGORY = 4;
 
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -27,16 +38,18 @@ const initialCandidate = (): CandidateInfo => ({
   date: today(),
 });
 
-const questionsByCategory = (
-  questions: readonly Question[],
-): Map<CategoryId, readonly Question[]> => {
-  const out = new Map<CategoryId, Question[]>();
+const groupQuestionsByCategory = (questions: readonly Question[]): QuestionsByCategory => {
+  const out: Record<string, Question[]> = {};
   for (const q of questions) {
     if (q.categoryId === null) continue;
-    const bucket = out.get(q.categoryId);
-    if (bucket === undefined) out.set(q.categoryId, [q]);
-    else bucket.push(q);
+    (out[q.categoryId] ??= []).push(q);
   }
+  return out;
+};
+
+const indexCategories = (categories: readonly Category[]): Record<string, Category> => {
+  const out: Record<string, Category> = {};
+  for (const c of categories) out[c.id] = c;
   return out;
 };
 
@@ -57,37 +70,18 @@ export class NewInterviewStore {
   readonly categories = computed(() => this._aggregate()?.categories ?? []);
   readonly allQuestions = computed(() => this._aggregate()?.questions ?? []);
 
-  readonly questionsByCategory: Signal<Map<CategoryId, readonly Question[]>> = computed(() =>
-    questionsByCategory(this.allQuestions()),
+  /** Plain immutable record so consumers don't carry a Map through signals. */
+  readonly questionsByCategory: Signal<QuestionsByCategory> = computed(() =>
+    groupQuestionsByCategory(this.allQuestions()),
   );
 
-  /** All questions belonging to enabled picks, in pick-row order, ignoring quotas. */
-  readonly availableInEnabled = computed(() => {
-    const buckets = this.questionsByCategory();
-    let total = 0;
-    for (const p of this._picks()) {
-      if (!p.enabled) continue;
-      total += buckets.get(p.categoryId)?.length ?? 0;
-    }
-    return total;
-  });
-
-  /** How many questions of `categoryId` actually exist (used for clamping). */
-  availableInCategory(categoryId: CategoryId): number {
-    return this.questionsByCategory().get(categoryId)?.length ?? 0;
-  }
-
-  effectivePickCount(pick: CategoryPick): number {
-    if (!pick.enabled) return 0;
-    return Math.min(pick.count, this.availableInCategory(pick.categoryId));
-  }
+  /** Pick rows joined with their category + counts, ready for the UI. */
+  readonly pickRows: Signal<readonly PickRow[]> = computed(() => this._buildPickRows());
 
   /** Total number of questions that will end up in the interview. */
-  readonly effectiveTotal: Signal<number> = computed(() => {
-    let total = 0;
-    for (const p of this._picks()) total += this.effectivePickCount(p);
-    return total;
-  });
+  readonly effectiveTotal: Signal<number> = computed(() =>
+    this.pickRows().reduce((sum, row) => sum + row.effective, 0),
+  );
 
   readonly canStart = computed(() => {
     const hasTemplate = this._aggregate() !== null;
@@ -103,19 +97,7 @@ export class NewInterviewStore {
 
   setAggregate(aggregate: TemplateAggregate | null): void {
     this._aggregate.set(aggregate);
-    if (aggregate === null) {
-      this._picks.set([]);
-      return;
-    }
-    const sorted = aggregate.categories.slice().sort((a, b) => a.order - b.order);
-    const buckets = questionsByCategory(aggregate.questions);
-    const picks = sorted.map<CategoryPick>((c) => ({
-      categoryId: c.id,
-      enabled: true,
-      count: Math.min(DEFAULT_PER_CATEGORY, buckets.get(c.id)?.length ?? 0),
-      mode: 'random',
-    }));
-    this._picks.set(picks);
+    this._picks.set(aggregate === null ? [] : this._seedPicks(aggregate));
   }
 
   setEnabled(categoryId: CategoryId, enabled: boolean): void {
@@ -134,7 +116,7 @@ export class NewInterviewStore {
     this._picks.update((picks) =>
       picks.map((p) => {
         if (p.categoryId !== categoryId) return p;
-        const max = this.availableInCategory(categoryId);
+        const max = this._availableInCategory(categoryId);
         const clamped = Math.max(0, Math.min(value, max));
         return { ...p, count: clamped };
       }),
@@ -163,5 +145,35 @@ export class NewInterviewStore {
 
   updateCandidate(patch: Partial<CandidateInfo>): void {
     this._candidate.update((c) => ({ ...c, ...patch }));
+  }
+
+  private _buildPickRows(): readonly PickRow[] {
+    const picks = this._picks();
+    const categoryById = indexCategories(this.categories());
+    const buckets = this.questionsByCategory();
+    const rows: PickRow[] = [];
+    for (const pick of picks) {
+      const category = categoryById[pick.categoryId];
+      if (category === undefined) continue;
+      const available = buckets[pick.categoryId]?.length ?? 0;
+      const effective = pick.enabled ? Math.min(pick.count, available) : 0;
+      rows.push({ pick, category, available, effective });
+    }
+    return rows;
+  }
+
+  private _seedPicks(aggregate: TemplateAggregate): readonly CategoryPick[] {
+    const sorted = aggregate.categories.slice().sort((a, b) => a.order - b.order);
+    const buckets = groupQuestionsByCategory(aggregate.questions);
+    return sorted.map<CategoryPick>((c) => ({
+      categoryId: c.id,
+      enabled: true,
+      count: Math.min(DEFAULT_PER_CATEGORY, buckets[c.id]?.length ?? 0),
+      mode: 'random',
+    }));
+  }
+
+  private _availableInCategory(categoryId: CategoryId): number {
+    return this.questionsByCategory()[categoryId]?.length ?? 0;
   }
 }

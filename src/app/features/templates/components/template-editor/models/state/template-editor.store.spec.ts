@@ -107,10 +107,10 @@ describe('TemplateEditorStore', () => {
           question('q4', null),
         ],
       });
-      const map = store.questionCountByCategory();
-      expect(map.get(CAT_A)).toBe(2);
-      expect(map.get(CAT_B)).toBe(1);
-      expect(map.size).toBe(2);
+      const counts = store.questionCountByCategory();
+      expect(counts[CAT_A]).toBe(2);
+      expect(counts[CAT_B]).toBe(1);
+      expect(Object.keys(counts)).toHaveLength(2);
     });
   });
 

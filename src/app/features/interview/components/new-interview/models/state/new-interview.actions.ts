@@ -132,7 +132,7 @@ export class NewInterviewActions {
     const out: Question[] = [];
     for (const pick of this._store.picks()) {
       if (!pick.enabled) continue;
-      const fromBucket = sortedByOrder(buckets.get(pick.categoryId) ?? []);
+      const fromBucket = sortedByOrder(buckets[pick.categoryId] ?? []);
       out.push(...takeForPick(fromBucket, pick));
     }
     return out;

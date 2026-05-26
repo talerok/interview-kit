@@ -39,22 +39,14 @@ export class TemplateEditorStore {
     return all.filter((q) => q.categoryId === filter);
   });
 
-  readonly categoriesMap: Signal<Map<CategoryId, Category>> = computed(() => {
-    const map = new Map<CategoryId, Category>();
-    for (const c of this.categories()) {
-      map.set(c.id, c);
-    }
-    return map;
-  });
+  /** Lookup by id as an immutable record (avoids Signal<Map<>>). */
+  readonly categoryById: Signal<Readonly<Record<string, Category>>> = computed(() =>
+    indexById(this.categories()),
+  );
 
-  readonly questionCountByCategory: Signal<Map<CategoryId, number>> = computed(() => {
-    const map = new Map<CategoryId, number>();
-    for (const q of this.questions()) {
-      if (q.categoryId === null) continue;
-      map.set(q.categoryId, (map.get(q.categoryId) ?? 0) + 1);
-    }
-    return map;
-  });
+  readonly questionCountByCategory: Signal<Readonly<Record<string, number>>> = computed(() =>
+    countByCategory(this.questions()),
+  );
 
   setAggregate(value: TemplateAggregate | null): void {
     this._aggregate.set(value);
@@ -155,3 +147,18 @@ export class TemplateEditorStore {
     this._editing.set(null);
   }
 }
+
+const indexById = (categories: readonly Category[]): Readonly<Record<string, Category>> => {
+  const out: Record<string, Category> = {};
+  for (const c of categories) out[c.id] = c;
+  return out;
+};
+
+const countByCategory = (questions: readonly Question[]): Readonly<Record<string, number>> => {
+  const out: Record<string, number> = {};
+  for (const q of questions) {
+    if (q.categoryId === null) continue;
+    out[q.categoryId] = (out[q.categoryId] ?? 0) + 1;
+  }
+  return out;
+};
