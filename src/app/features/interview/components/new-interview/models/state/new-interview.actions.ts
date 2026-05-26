@@ -1,9 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, EMPTY, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, Observable, map, of, switchMap, tap } from 'rxjs';
 import { CloudSyncService } from '../../../../../../api/cloud';
-import { newId, sample } from '../../../../../../shared/utils';
+import { newId, sample, shuffle } from '../../../../../../shared/utils';
+import {
+  CategoryId,
+  Question,
+  TemplateId,
+} from '../../../../../templates/interfaces/template';
 import { TemplateRepo } from '../../../../../templates/models/data/template.repo';
-import { CategoryId, TemplateId } from '../../../../../templates/interfaces/template';
 import {
   Answer,
   CandidateInfo,
@@ -13,7 +17,7 @@ import {
 } from '../../../../interfaces/interview';
 import { InterviewRepo } from '../../../../models/data/interview.repo';
 import { InterviewsActions } from '../../../../models/state/interviews.actions';
-import { NewInterviewStore } from './new-interview.store';
+import { CategoryPick, NewInterviewStore, PickMode, RunOrder } from './new-interview.store';
 
 @Injectable()
 export class NewInterviewActions {
@@ -34,16 +38,28 @@ export class NewInterviewActions {
     );
   }
 
-  setCount(value: number): void {
-    this._store.setCount(value);
-  }
-
-  toggleCategory(id: CategoryId): void {
-    this._store.toggleCategory(id);
+  setEnabled(categoryId: CategoryId, enabled: boolean): void {
+    this._store.setEnabled(categoryId, enabled);
   }
 
   toggleAllCategories(): void {
-    this._store.toggleAllCategories();
+    this._store.toggleAll();
+  }
+
+  setPickCount(categoryId: CategoryId, value: number): void {
+    this._store.setPickCount(categoryId, value);
+  }
+
+  setPickMode(categoryId: CategoryId, mode: PickMode): void {
+    this._store.setPickMode(categoryId, mode);
+  }
+
+  reorderPicks(fromIndex: number, toIndex: number): void {
+    this._store.reorderPicks(fromIndex, toIndex);
+  }
+
+  setRunOrder(value: RunOrder): void {
+    this._store.setRunOrder(value);
   }
 
   updateCandidate(patch: Partial<CandidateInfo>): void {
@@ -73,12 +89,10 @@ export class NewInterviewActions {
     if (templateId === null || tpl === null) {
       return null;
     }
-    const filtered = this._store.filteredQuestions();
-    const count = this._store.effectiveCount();
-    const sampled = sample(filtered, count);
+    const sampled = this._selectQuestions();
+    const ordered = this._store.runOrder() === 'shuffled' ? shuffle(sampled) : sampled;
     const now = new Date().toISOString();
     const interviewId = newId<'InterviewId'>();
-    const answersCount = sampled.length;
     const interview: Interview = {
       id: interviewId,
       templateId,
@@ -87,14 +101,14 @@ export class NewInterviewActions {
       durationMin: 0,
       notes: '',
       rev: 1,
-      answersCount,
+      answersCount: ordered.length,
       answeredCount: 0,
       skippedCount: 0,
       avg: 0,
       createdAt: now,
       updatedAt: now,
     };
-    const answers: readonly Answer[] = sampled.map((q, index) => ({
+    const answers: readonly Answer[] = ordered.map((q, index) => ({
       id: newId<'AnswerId'>(),
       interviewId,
       questionId: q.id,
@@ -108,6 +122,30 @@ export class NewInterviewActions {
     }));
     return { interview, answers };
   }
+
+  /**
+   * Pick questions per enabled category-pick using each pick's quota+mode.
+   * Returned list is grouped by pick row order (the "sequential" run mode).
+   */
+  private _selectQuestions(): readonly Question[] {
+    const buckets = this._store.questionsByCategory();
+    const out: Question[] = [];
+    for (const pick of this._store.picks()) {
+      if (!pick.enabled) continue;
+      const fromBucket = sortedByOrder(buckets.get(pick.categoryId) ?? []);
+      out.push(...takeForPick(fromBucket, pick));
+    }
+    return out;
+  }
 }
+
+const sortedByOrder = (qs: readonly Question[]): readonly Question[] =>
+  qs.slice().sort((a, b) => a.order - b.order);
+
+const takeForPick = (qs: readonly Question[], pick: CategoryPick): readonly Question[] => {
+  const n = Math.min(pick.count, qs.length);
+  if (n === 0) return [];
+  return pick.mode === 'first' ? qs.slice(0, n) : sample(qs, n);
+};
 
 export type { InterviewId };

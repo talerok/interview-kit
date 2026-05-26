@@ -1,3 +1,4 @@
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { IconComponent } from '../../../../../../shared/ui/icon';
@@ -18,7 +19,7 @@ interface RenderRow {
 
 @Component({
   selector: 'app-question-list',
-  imports: [IconComponent, QuestionRowComponent, QuestionEditorComponent],
+  imports: [IconComponent, QuestionRowComponent, QuestionEditorComponent, CdkDropList, CdkDrag],
   templateUrl: './question-list.component.html',
   styleUrl: './question-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,8 +62,31 @@ export class QuestionListComponent {
     return { text: q.text, categoryId: q.categoryId, weight: q.weight };
   });
 
+  /**
+   * Drag-reorder is only available with no active category filter and no
+   * editor open — otherwise the visible list isn't a faithful slice of the
+   * underlying order, and a drop event can't map cleanly to the full list.
+   */
+  protected readonly _canReorder = computed(
+    () => this._store.filter() === null && this._store.editing() === null,
+  );
+
   protected _onAdd(): void {
     this._actions.startAdding();
+  }
+
+  protected _onDrop(event: CdkDragDrop<readonly RenderRow[]>): void {
+    if (!this._canReorder()) return;
+    if (event.previousIndex === event.currentIndex) return;
+    const rows = this._rows();
+    const next = rows.slice();
+    const [moved] = next.splice(event.previousIndex, 1);
+    next.splice(event.currentIndex, 0, moved);
+    const orderedIds = next.map((r) => r.question.id);
+    this._actions
+      .reorderQuestions(orderedIds)
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe();
   }
 
   protected _onEdit(id: QuestionId): void {

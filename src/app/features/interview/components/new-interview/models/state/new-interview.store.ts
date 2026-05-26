@@ -1,8 +1,23 @@
 import { Injectable, Signal, computed, signal } from '@angular/core';
-import { CategoryId, TemplateAggregate, TemplateId } from '../../../../../templates/interfaces/template';
+import {
+  CategoryId,
+  Question,
+  TemplateAggregate,
+  TemplateId,
+} from '../../../../../templates/interfaces/template';
 import { CandidateInfo } from '../../../../interfaces/interview';
 
-const DEFAULT_COUNT = 8;
+export type PickMode = 'random' | 'first';
+export type RunOrder = 'sequential' | 'shuffled';
+
+export interface CategoryPick {
+  readonly categoryId: CategoryId;
+  readonly enabled: boolean;
+  readonly count: number;
+  readonly mode: PickMode;
+}
+
+const DEFAULT_PER_CATEGORY = 4;
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
@@ -12,82 +27,138 @@ const initialCandidate = (): CandidateInfo => ({
   date: today(),
 });
 
+const questionsByCategory = (
+  questions: readonly Question[],
+): Map<CategoryId, readonly Question[]> => {
+  const out = new Map<CategoryId, Question[]>();
+  for (const q of questions) {
+    if (q.categoryId === null) continue;
+    const bucket = out.get(q.categoryId);
+    if (bucket === undefined) out.set(q.categoryId, [q]);
+    else bucket.push(q);
+  }
+  return out;
+};
+
 @Injectable()
 export class NewInterviewStore {
   private readonly _templateId = signal<TemplateId | null>(null);
   private readonly _aggregate = signal<TemplateAggregate | null>(null);
-  private readonly _count = signal(DEFAULT_COUNT);
-  private readonly _activeCategoryIds = signal<readonly CategoryId[] | null>(null);
+  private readonly _picks = signal<readonly CategoryPick[]>([]);
+  private readonly _runOrder = signal<RunOrder>('sequential');
   private readonly _candidate = signal<CandidateInfo>(initialCandidate());
 
   readonly templateId = this._templateId.asReadonly();
   readonly aggregate = this._aggregate.asReadonly();
-  readonly count = this._count.asReadonly();
-  readonly activeCategoryIds = this._activeCategoryIds.asReadonly();
+  readonly picks = this._picks.asReadonly();
+  readonly runOrder = this._runOrder.asReadonly();
   readonly candidate = this._candidate.asReadonly();
 
   readonly categories = computed(() => this._aggregate()?.categories ?? []);
   readonly allQuestions = computed(() => this._aggregate()?.questions ?? []);
 
-  readonly effectiveActiveCategoryIds: Signal<readonly CategoryId[]> = computed(() => {
-    const explicit = this._activeCategoryIds();
-    if (explicit !== null) {
-      return explicit;
+  readonly questionsByCategory: Signal<Map<CategoryId, readonly Question[]>> = computed(() =>
+    questionsByCategory(this.allQuestions()),
+  );
+
+  /** All questions belonging to enabled picks, in pick-row order, ignoring quotas. */
+  readonly availableInEnabled = computed(() => {
+    const buckets = this.questionsByCategory();
+    let total = 0;
+    for (const p of this._picks()) {
+      if (!p.enabled) continue;
+      total += buckets.get(p.categoryId)?.length ?? 0;
     }
-    return this.categories().map((c) => c.id);
+    return total;
   });
 
-  readonly filteredQuestions = computed(() => {
-    const active = new Set(this.effectiveActiveCategoryIds());
-    return this.allQuestions().filter(
-      (q) => q.categoryId !== null && active.has(q.categoryId),
-    );
+  /** How many questions of `categoryId` actually exist (used for clamping). */
+  availableInCategory(categoryId: CategoryId): number {
+    return this.questionsByCategory().get(categoryId)?.length ?? 0;
+  }
+
+  effectivePickCount(pick: CategoryPick): number {
+    if (!pick.enabled) return 0;
+    return Math.min(pick.count, this.availableInCategory(pick.categoryId));
+  }
+
+  /** Total number of questions that will end up in the interview. */
+  readonly effectiveTotal: Signal<number> = computed(() => {
+    let total = 0;
+    for (const p of this._picks()) total += this.effectivePickCount(p);
+    return total;
   });
-
-  readonly availableCount = computed(() => this.filteredQuestions().length);
-
-  readonly effectiveCount = computed(() => Math.min(this._count(), this.availableCount()));
 
   readonly canStart = computed(() => {
     const hasTemplate = this._aggregate() !== null;
     const hasName = this._candidate().name.trim().length > 0;
-    const enoughQuestions = this.effectiveCount() > 0;
-    return hasTemplate && hasName && enoughQuestions;
+    return hasTemplate && hasName && this.effectiveTotal() > 0;
   });
 
   setTemplateId(id: TemplateId | null): void {
     this._templateId.set(id);
     this._aggregate.set(null);
-    this._activeCategoryIds.set(null);
+    this._picks.set([]);
   }
 
   setAggregate(aggregate: TemplateAggregate | null): void {
     this._aggregate.set(aggregate);
-    this._activeCategoryIds.set(null);
-  }
-
-  setCount(value: number): void {
-    this._count.set(Math.max(1, value));
-  }
-
-  toggleCategory(id: CategoryId): void {
-    const all = this.categories().map((c) => c.id);
-    const current = this._activeCategoryIds() ?? all;
-    const set = new Set(current);
-    if (set.has(id)) {
-      set.delete(id);
-    } else {
-      set.add(id);
+    if (aggregate === null) {
+      this._picks.set([]);
+      return;
     }
-    const next = all.filter((c) => set.has(c));
-    this._activeCategoryIds.set(next);
+    const sorted = aggregate.categories.slice().sort((a, b) => a.order - b.order);
+    const buckets = questionsByCategory(aggregate.questions);
+    const picks = sorted.map<CategoryPick>((c) => ({
+      categoryId: c.id,
+      enabled: true,
+      count: Math.min(DEFAULT_PER_CATEGORY, buckets.get(c.id)?.length ?? 0),
+      mode: 'random',
+    }));
+    this._picks.set(picks);
   }
 
-  toggleAllCategories(): void {
-    const all = this.categories().map((c) => c.id);
-    const current = this._activeCategoryIds() ?? all;
-    const next = current.length === all.length ? [] : all;
-    this._activeCategoryIds.set(next);
+  setEnabled(categoryId: CategoryId, enabled: boolean): void {
+    this._picks.update((picks) =>
+      picks.map((p) => (p.categoryId === categoryId ? { ...p, enabled } : p)),
+    );
+  }
+
+  toggleAll(): void {
+    const picks = this._picks();
+    const allOn = picks.every((p) => p.enabled);
+    this._picks.set(picks.map((p) => ({ ...p, enabled: !allOn })));
+  }
+
+  setPickCount(categoryId: CategoryId, value: number): void {
+    this._picks.update((picks) =>
+      picks.map((p) => {
+        if (p.categoryId !== categoryId) return p;
+        const max = this.availableInCategory(categoryId);
+        const clamped = Math.max(0, Math.min(value, max));
+        return { ...p, count: clamped };
+      }),
+    );
+  }
+
+  setPickMode(categoryId: CategoryId, mode: PickMode): void {
+    this._picks.update((picks) =>
+      picks.map((p) => (p.categoryId === categoryId ? { ...p, mode } : p)),
+    );
+  }
+
+  reorderPicks(fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return;
+    this._picks.update((picks) => {
+      const next = picks.slice();
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  }
+
+  setRunOrder(value: RunOrder): void {
+    this._runOrder.set(value);
   }
 
   updateCandidate(patch: Partial<CandidateInfo>): void {

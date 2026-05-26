@@ -227,6 +227,42 @@ export class TemplateRepo {
     });
   }
 
+  /**
+   * Rewrite the `order` field on every template question to match the provided
+   * sequence. Questions absent from `orderedIds` keep their existing rows but
+   * are placed at the tail in their previous order. Bumps template.rev once.
+   */
+  reorderQuestions(
+    templateId: TemplateId,
+    orderedIds: readonly QuestionId[],
+  ): Observable<Template> {
+    return defer(async () => {
+      const tx = this._appDb.database.transaction(
+        [STORES.templates, STORES.questions],
+        'readwrite',
+      );
+      const qStore = tx.objectStore<QuestionDto>(STORES.questions);
+      const allKeys = await promisifyRequest<IDBValidKey[]>(
+        qStore.raw.index(INDEXES.questions.byTemplate).getAllKeys(templateId),
+      );
+      const idSet = new Set(orderedIds);
+      const tailKeys = allKeys.filter((k) => !idSet.has(k as QuestionId));
+
+      const finalSequence = [...orderedIds, ...(tailKeys as QuestionId[])];
+      for (let i = 0; i < finalSequence.length; i++) {
+        const id = finalSequence[i];
+        const current = await qStore.get(id);
+        if (!current) continue;
+        if (current.order !== i) {
+          await qStore.put({ ...current, order: i });
+        }
+      }
+      const next = await this._bumpTemplate(tx, templateId, (current) => current);
+      await tx.done;
+      return toTemplate(next);
+    });
+  }
+
   deleteQuestion(
     templateId: TemplateId,
     questionId: QuestionId,

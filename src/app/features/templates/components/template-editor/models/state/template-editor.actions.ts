@@ -115,6 +115,20 @@ export class TemplateEditorActions {
     );
   }
 
+  reorderQuestions(orderedIds: readonly QuestionId[]): Observable<void> {
+    const templateId = this._currentTemplateId();
+    if (templateId === null) {
+      return EMPTY;
+    }
+    // Update the in-memory store first for an instant visual response; the
+    // repo write below makes it durable and bumps template.rev.
+    this._store.reorderQuestions(orderedIds);
+    return this._repo.reorderQuestions(templateId, orderedIds).pipe(
+      tap((template) => this._afterTemplateChange(template)),
+      map(() => undefined),
+    );
+  }
+
   deleteQuestion(id: QuestionId): Observable<void> {
     const templateId = this._currentTemplateId();
     if (templateId === null) {

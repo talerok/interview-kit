@@ -14,7 +14,17 @@
   </button>
 </header>
 
-<div class="q-list">
+@if (_canReorder()) {
+  <div class="q-list__hint">
+    <app-icon name="drag" /> Перетаскивайте, чтобы изменить порядок вопросов.
+  </div>
+} @else if (_store.filter() !== null) {
+  <div class="q-list__hint q-list__hint--muted">
+    Снимите фильтр по категории, чтобы менять порядок.
+  </div>
+}
+
+<div class="q-list" cdkDropList (cdkDropListDropped)="_onDrop($event)">
   @if (_store.editing() === 'new') {
     <app-question-editor
       mode="new"
@@ -35,6 +45,8 @@
       />
     } @else {
       <app-question-row
+        cdkDrag
+        [cdkDragDisabled]="!_canReorder()"
         [question]="row.question"
         [category]="row.category"
         [index]="row.index"

@@ -37,130 +37,136 @@ const cat = (id: CategoryId, order: number): Category => ({
   order,
 });
 
-const question = (id: string, categoryId: CategoryId | null): Question => ({
+const question = (id: string, categoryId: CategoryId | null, order = 0): Question => ({
   id: asId<'QuestionId'>(id) as QuestionId,
   templateId: TID,
   categoryId,
   text: id,
   weight: 1,
-  order: 0,
+  order,
 });
 
 const aggregate: TemplateAggregate = {
   template,
   categories: [cat(CAT_A, 0), cat(CAT_B, 1)],
   questions: [
-    question('q1', CAT_A),
-    question('q2', CAT_A),
-    question('q3', CAT_B),
-    question('q4', null),
+    question('q1', CAT_A, 0),
+    question('q2', CAT_A, 1),
+    question('q3', CAT_B, 0),
+    question('q4', null, 0),
   ],
 };
 
 describe('NewInterviewStore', () => {
-  it('starts with no template selected and default count', () => {
+  it('starts with no template selected and empty picks', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       expect(store.templateId()).toBeNull();
-      expect(store.count()).toBe(8);
+      expect(store.picks()).toEqual([]);
       expect(store.canStart()).toBe(false);
     });
   });
 
-  it('setTemplateId resets aggregate and category selection', () => {
-    TestBed.runInInjectionContext(() => {
-      const store = new NewInterviewStore();
-      store.setTemplateId(TID);
-      store.setAggregate(aggregate);
-      store.toggleCategory(CAT_A);
-      store.setTemplateId(asId<'TemplateId'>('t2') as TemplateId);
-      expect(store.aggregate()).toBeNull();
-      expect(store.activeCategoryIds()).toBeNull();
-    });
-  });
-
-  it('effectiveActiveCategoryIds defaults to all categories when nothing is explicit', () => {
+  it('setAggregate seeds one pick per category in category.order', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
-      expect(store.effectiveActiveCategoryIds()).toEqual([CAT_A, CAT_B]);
+      const picks = store.picks();
+      expect(picks).toHaveLength(2);
+      expect(picks.map((p) => p.categoryId)).toEqual([CAT_A, CAT_B]);
+      expect(picks.every((p) => p.enabled)).toBe(true);
+      expect(picks.every((p) => p.mode === 'random')).toBe(true);
     });
   });
 
-  it('filteredQuestions excludes uncategorized questions and respects active set', () => {
+  it('seeded pick.count is clamped to availableInCategory', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
-      // by default: all categories active → q1, q2, q3 (q4 is uncategorized)
-      expect(store.filteredQuestions().map((q) => q.id)).toEqual(['q1', 'q2', 'q3']);
-
-      store.toggleCategory(CAT_B);
-      // CAT_B disabled → only CAT_A questions
-      expect(store.filteredQuestions().map((q) => q.id)).toEqual(['q1', 'q2']);
+      // CAT_A has 2 questions, CAT_B has 1
+      const a = store.picks().find((p) => p.categoryId === CAT_A);
+      const b = store.picks().find((p) => p.categoryId === CAT_B);
+      expect(a?.count).toBe(2);
+      expect(b?.count).toBe(1);
     });
   });
 
-  it('toggleCategory deselects an already-active category', () => {
+  it('effectiveTotal sums effective counts across enabled picks only', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
-      store.toggleCategory(CAT_A);
-      expect(store.effectiveActiveCategoryIds()).toEqual([CAT_B]);
+      // CAT_A: 2, CAT_B: 1 → 3
+      expect(store.effectiveTotal()).toBe(3);
+
+      store.setEnabled(CAT_B, false);
+      expect(store.effectiveTotal()).toBe(2);
     });
   });
 
-  it('toggleAllCategories empties when everything is selected, restores all otherwise', () => {
+  it('setPickCount clamps to [0, availableInCategory]', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
-      store.toggleAllCategories();
-      expect(store.effectiveActiveCategoryIds()).toEqual([]);
-      store.toggleAllCategories();
-      expect(store.effectiveActiveCategoryIds()).toEqual([CAT_A, CAT_B]);
+
+      store.setPickCount(CAT_A, 99);
+      expect(store.picks().find((p) => p.categoryId === CAT_A)?.count).toBe(2);
+
+      store.setPickCount(CAT_A, -5);
+      expect(store.picks().find((p) => p.categoryId === CAT_A)?.count).toBe(0);
     });
   });
 
-  it('setCount clamps to a minimum of 1', () => {
-    TestBed.runInInjectionContext(() => {
-      const store = new NewInterviewStore();
-      store.setCount(0);
-      expect(store.count()).toBe(1);
-      store.setCount(-3);
-      expect(store.count()).toBe(1);
-      store.setCount(10);
-      expect(store.count()).toBe(10);
-    });
-  });
-
-  it('effectiveCount = min(count, availableCount)', () => {
+  it('setPickMode flips the mode', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
-      store.setCount(2);
-      expect(store.effectiveCount()).toBe(2);
-      store.setCount(99);
-      // only 3 categorized questions are available
-      expect(store.effectiveCount()).toBe(3);
+      store.setPickMode(CAT_A, 'first');
+      expect(store.picks().find((p) => p.categoryId === CAT_A)?.mode).toBe('first');
     });
   });
 
-  it('canStart requires aggregate + name + questions', () => {
+  it('reorderPicks moves a row to the requested index', () => {
+    TestBed.runInInjectionContext(() => {
+      const store = new NewInterviewStore();
+      store.setAggregate(aggregate);
+      store.reorderPicks(0, 1);
+      expect(store.picks().map((p) => p.categoryId)).toEqual([CAT_B, CAT_A]);
+    });
+  });
+
+  it('toggleAll flips every pick at once', () => {
+    TestBed.runInInjectionContext(() => {
+      const store = new NewInterviewStore();
+      store.setAggregate(aggregate);
+      store.toggleAll();
+      expect(store.picks().every((p) => !p.enabled)).toBe(true);
+      store.toggleAll();
+      expect(store.picks().every((p) => p.enabled)).toBe(true);
+    });
+  });
+
+  it('canStart requires template + name + non-zero total', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       expect(store.canStart()).toBe(false);
 
       store.setAggregate(aggregate);
-      expect(store.canStart()).toBe(false);
-
-      store.updateCandidate({ name: '   ' });
-      expect(store.canStart()).toBe(false);
+      expect(store.canStart()).toBe(false); // name missing
 
       store.updateCandidate({ name: 'Анна' });
       expect(store.canStart()).toBe(true);
 
-      // deselecting all categories drops effectiveCount to 0
-      store.toggleAllCategories();
+      store.toggleAll(); // disable all → total = 0
       expect(store.canStart()).toBe(false);
+    });
+  });
+
+  it('runOrder defaults to sequential and is mutable', () => {
+    TestBed.runInInjectionContext(() => {
+      const store = new NewInterviewStore();
+      expect(store.runOrder()).toBe('sequential');
+      store.setRunOrder('shuffled');
+      expect(store.runOrder()).toBe('shuffled');
     });
   });
 });

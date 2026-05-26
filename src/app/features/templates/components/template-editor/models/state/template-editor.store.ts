@@ -124,6 +124,25 @@ export class TemplateEditorStore {
     );
   }
 
+  /**
+   * Re-stamp every question's `order` field so the in-memory list matches the
+   * supplied sequence. Used after a drag-and-drop reorder; the new order has
+   * already been persisted to IDB by the action.
+   */
+  reorderQuestions(orderedIds: readonly QuestionId[]): void {
+    this._aggregate.update((a) => {
+      if (a === null) return a;
+      const indexById = new Map(orderedIds.map((id, i) => [id, i]));
+      const fallback = orderedIds.length;
+      return {
+        ...a,
+        questions: a.questions
+          .map((q) => ({ ...q, order: indexById.get(q.id) ?? fallback }))
+          .sort((x, y) => x.order - y.order),
+      };
+    });
+  }
+
   setFilter(value: CategoryId | null): void {
     this._filter.set(value);
   }

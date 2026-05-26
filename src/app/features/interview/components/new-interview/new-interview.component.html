@@ -3,9 +3,7 @@
     <span class="topbar__crumbs-current">Новое интервью</span>
   </nav>
   <div class="topbar__actions">
-    <button type="button" class="btn" (click)="_onCancel()">
-      <app-icon name="x" /> Отмена
-    </button>
+    <button type="button" class="btn" (click)="_onCancel()"><app-icon name="x" /> Отмена</button>
     <button
       type="button"
       class="btn btn--accent btn--lg"
@@ -20,12 +18,12 @@
 <section class="page">
   <header class="page__header">
     <h1 class="page__title">Новое интервью</h1>
-    <p class="page__desc">Выберите шаблон и количество вопросов. Вопросы будут выбраны случайно из включенных категорий.</p>
+    <p class="page__desc">Настройте квоту по каждой категории и режим выдачи вопросов.</p>
   </header>
 
   <div class="setup">
     <div class="setup__main">
-
+      <!-- 1. Шаблон -->
       <div class="card">
         <div class="card__head">
           <div class="card__label">1. Тип интервью</div>
@@ -51,12 +49,13 @@
                     class="tpl-opt__mark"
                     [style.background]="'oklch(from ' + t.color + ' l c h / 0.12)'"
                     [style.color]="t.color"
-                  >{{ t.code }}</span>
+                    >{{ t.code }}</span
+                  >
                   <span class="tpl-opt__name">{{ t.name }}</span>
                 </div>
                 <div class="tpl-opt__meta">
-                  {{ t.questionCount }} {{ t.questionCount | pluralRu: _questionForms }}
-                  · {{ t.categoryCount }} {{ t.categoryCount | pluralRu: _categoryForms }}
+                  {{ t.questionCount }} {{ t.questionCount | pluralRu: _questionForms }} ·
+                  {{ t.categoryCount }} {{ t.categoryCount | pluralRu: _categoryForms }}
                 </div>
               </button>
             }
@@ -64,82 +63,9 @@
         }
       </div>
 
+      <!-- 2. Кандидат -->
       <div class="card">
-        <div class="card__head">
-          <div class="card__label">2. Количество вопросов</div>
-          <div class="card__hint">из {{ _store.availableCount() }} доступных</div>
-        </div>
-        <div class="stepper">
-          <button
-            type="button"
-            class="stepper__btn"
-            [disabled]="_store.count() <= 1"
-            (click)="_decCount()"
-          >−</button>
-          <span class="stepper__value">{{ _store.effectiveCount() }}</span>
-          <button
-            type="button"
-            class="stepper__btn"
-            [disabled]="_store.effectiveCount() >= _store.availableCount()"
-            (click)="_incCount()"
-          >+</button>
-          <span class="stepper__hint">
-            ≈{{ _estimatedMin() }} мин · {{ _store.effectiveCount() }}
-            {{ _store.effectiveCount() | pluralRu: _questionForms }}
-          </span>
-          <span class="stepper__spacer"></span>
-          <div class="stepper__presets">
-            @for (p of _countPresets; track p) {
-              <button
-                type="button"
-                class="btn btn--sm"
-                [class.btn--accent]="_store.effectiveCount() === p"
-                [disabled]="p > _store.availableCount()"
-                (click)="_setCount(p)"
-              >{{ p }}</button>
-            }
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card__head">
-          <div class="card__label">3. Категории вопросов</div>
-          @if (_store.categories().length > 0) {
-            <button class="card__action" type="button" (click)="_toggleAllCategories()">
-              @if (_store.effectiveActiveCategoryIds().length === _store.categories().length) {
-                Снять все
-              } @else {
-                Выбрать все
-              }
-            </button>
-          }
-        </div>
-        @if (_store.categories().length === 0) {
-          <div class="card__empty">
-            У выбранного шаблона нет категорий.
-          </div>
-        } @else {
-          <div class="cats">
-            @for (c of _store.categories(); track c.id) {
-              <button
-                type="button"
-                class="cat"
-                [class.is-on]="_isCategoryActive(c.id)"
-                [style.background]="_isCategoryActive(c.id) ? 'oklch(from ' + c.color + ' l c h / 0.14)' : null"
-                [style.color]="_isCategoryActive(c.id) ? c.color : null"
-                (click)="_toggleCategory(c.id)"
-              >
-                <span class="cat__dot" [style.background]="c.color"></span>
-                {{ c.label }}
-              </button>
-            }
-          </div>
-        }
-      </div>
-
-      <div class="card">
-        <div class="card__label">4. Кандидат</div>
+        <div class="card__label">2. Кандидат</div>
         <div class="cand-grid">
           <label class="field">
             <span class="field__label"><app-icon name="user" /> Имя *</span>
@@ -161,20 +87,151 @@
               (input)="_onCandidatePosition($event)"
             />
           </label>
+          <label class="field">
+            <span class="field__label"><app-icon name="calendar" /> Дата</span>
+            <input
+              class="input"
+              type="date"
+              [value]="_store.candidate().date"
+              (input)="_onCandidateDate($event)"
+            />
+          </label>
         </div>
-        <label class="field cand-grid__date">
-          <span class="field__label"><app-icon name="calendar" /> Дата</span>
-          <input
-            class="input"
-            type="date"
-            [value]="_store.candidate().date"
-            (input)="_onCandidateDate($event)"
-          />
-        </label>
       </div>
 
+      <!-- 3. Категории -->
+      <div class="card">
+        <div class="card__head">
+          <div class="card__label">3. Категории и количество вопросов</div>
+          @if (_rows().length > 0) {
+            <button type="button" class="card__action" (click)="_onToggleAll()">
+              @if (_allEnabled()) {
+                Снять все
+              } @else {
+                Выбрать все
+              }
+            </button>
+          }
+        </div>
+        @if (_rows().length === 0) {
+          <div class="card__empty">У выбранного шаблона нет категорий.</div>
+        } @else {
+          <div class="picks-hint">
+            <app-icon name="drag" /> Перетаскивайте, чтобы менять порядок прохождения по категориям.
+          </div>
+          <div class="picks" cdkDropList (cdkDropListDropped)="_onDrop($event)">
+            @for (row of _rows(); track row.pick.categoryId) {
+              <article class="pick" cdkDrag [class.pick--off]="!row.pick.enabled">
+                <button
+                  type="button"
+                  class="pick__drag"
+                  cdkDragHandle
+                  aria-label="Перетащить"
+                  tabindex="-1"
+                >
+                  <app-icon name="drag" />
+                </button>
+
+                <label class="pick__toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="row.pick.enabled"
+                    (change)="_onToggle(row.pick.categoryId, $any($event.target).checked)"
+                  />
+                  <span class="pick__dot" [style.background]="row.category.color"></span>
+                  <span class="pick__name">{{ row.category.label }}</span>
+                </label>
+
+                <div class="pick__count" [class.is-dim]="!row.pick.enabled">
+                  <button
+                    type="button"
+                    class="pick__cnt-btn"
+                    [disabled]="!row.pick.enabled || row.pick.count <= 0"
+                    (click)="_decCount(row)"
+                  >
+                    −
+                  </button>
+                  <input
+                    class="pick__cnt-input"
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    [max]="row.available"
+                    [value]="row.pick.count"
+                    [disabled]="!row.pick.enabled"
+                    (input)="_onCountChange(row.pick.categoryId, $event)"
+                  />
+                  <button
+                    type="button"
+                    class="pick__cnt-btn"
+                    [disabled]="!row.pick.enabled || row.pick.count >= row.available"
+                    (click)="_incCount(row)"
+                  >
+                    +
+                  </button>
+                  <span class="pick__cnt-of">из {{ row.available }}</span>
+                </div>
+
+                <div class="pick__mode" [class.is-dim]="!row.pick.enabled">
+                  <button
+                    type="button"
+                    class="seg"
+                    [class.is-on]="row.pick.mode === 'random'"
+                    [disabled]="!row.pick.enabled"
+                    (click)="_setMode(row.pick.categoryId, 'random')"
+                  >
+                    <app-icon name="shuffle" /> Случайные
+                  </button>
+                  <button
+                    type="button"
+                    class="seg"
+                    [class.is-on]="row.pick.mode === 'first'"
+                    [disabled]="!row.pick.enabled"
+                    (click)="_setMode(row.pick.categoryId, 'first')"
+                  >
+                    <app-icon name="layers" /> Первые
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- 4. Порядок прохождения -->
+      <div class="card">
+        <div class="card__label">4. Порядок прохождения</div>
+        <div class="run-order">
+          <button
+            type="button"
+            class="run-opt"
+            [class.is-on]="_store.runOrder() === 'sequential'"
+            (click)="_setRunOrder('sequential')"
+          >
+            <div class="run-opt__title">
+              <app-icon name="layers" /> Последовательно по категориям
+            </div>
+            <div class="run-opt__desc">
+              Сначала вопросы первой категории, потом второй и так далее. Порядок задан списком
+              выше.
+            </div>
+          </button>
+          <button
+            type="button"
+            class="run-opt"
+            [class.is-on]="_store.runOrder() === 'shuffled'"
+            (click)="_setRunOrder('shuffled')"
+          >
+            <div class="run-opt__title"><app-icon name="shuffle" /> Полностью перемешать</div>
+            <div class="run-opt__desc">
+              Все выбранные вопросы идут в случайном порядке независимо от категории.
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
 
+    <!-- Сводка -->
     <aside class="setup__aside">
       <div class="summary">
         <div class="summary__label">Сводка</div>
@@ -188,7 +245,7 @@
         </div>
         <div class="summary__row">
           <span class="summary__lbl">Позиция</span>
-          <span class="summary__val">{{ _store.candidate().position || '—' }}</span>
+          <span class="summary__val">{{ _store.candidate().position || '— не указана —' }}</span>
         </div>
         <div class="summary__row">
           <span class="summary__lbl">Дата</span>
@@ -197,31 +254,39 @@
         <hr class="summary__divider" />
         <div class="summary__row">
           <span class="summary__lbl">Вопросов</span>
-          <span class="summary__val summary__val--mono">{{ _store.effectiveCount() }}</span>
+          <span class="summary__val summary__val--mono">{{ _store.effectiveTotal() }}</span>
         </div>
         <div class="summary__row">
           <span class="summary__lbl">Категорий</span>
-          <span class="summary__val summary__val--mono">
-            {{ _store.effectiveActiveCategoryIds().length }} / {{ _store.categories().length }}
+          <span class="summary__val summary__val--mono">{{ _enabledCount() }}</span>
+        </div>
+        <div class="summary__row">
+          <span class="summary__lbl">Порядок</span>
+          <span class="summary__val">
+            @if (_store.runOrder() === 'sequential') {
+              По категориям
+            } @else {
+              Перемешан
+            }
           </span>
         </div>
         <div class="summary__row">
           <span class="summary__lbl">Длительность</span>
-          <span class="summary__val summary__val--mono">≈{{ _estimatedMin() }} мин</span>
+          <span class="summary__val">~{{ _estimatedMin() }} мин</span>
         </div>
-        <hr class="summary__divider" />
-        <div class="summary__note">
-          <app-icon name="shuffle" />
-          <span>Случайный выбор из {{ _store.availableCount() }} вопросов</span>
-        </div>
-        <button
-          type="button"
-          class="btn btn--accent btn--lg summary__cta"
-          [disabled]="!_store.canStart()"
-          (click)="_onStart()"
-        >
-          <app-icon name="play" /> Начать интервью
-        </button>
+
+        @if (_enabledRows().length > 0) {
+          <hr class="summary__divider" />
+          <ul class="summary__breakdown">
+            @for (row of _enabledRows(); track row.pick.categoryId) {
+              <li class="summary__break-row">
+                <span class="summary__dot" [style.background]="row.category.color"></span>
+                <span class="summary__break-name">{{ row.category.label }}</span>
+                <span class="summary__break-cnt">{{ row.effective }}</span>
+              </li>
+            }
+          </ul>
+        }
       </div>
     </aside>
   </div>
