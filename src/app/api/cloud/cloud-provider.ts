@@ -1,7 +1,7 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AggregateKind, ManifestDto } from './manifest.dto';
-import { CloudAggregateDto } from './aggregate.dto';
+import { AggregateKind, ManifestDto } from './dto';
+import { CloudAggregateDto } from './dto';
 
 export type CloudProviderKind = 'dropbox';
 

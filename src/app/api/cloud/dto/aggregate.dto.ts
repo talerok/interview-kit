@@ -4,7 +4,7 @@ import {
   InterviewDto,
   QuestionDto,
   TemplateDto,
-} from '../storage/dto';
+} from '../../storage/dto';
 
 export const AGGREGATE_SCHEMA_VERSION = 1;
 
