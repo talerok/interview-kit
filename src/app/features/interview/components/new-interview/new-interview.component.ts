@@ -56,23 +56,9 @@ export class NewInterviewComponent {
   );
 
   /** Render-ready pick rows joined with their category + available counts. */
-  protected readonly _rows = computed<readonly PickRow[]>(() => {
-    const categoryById = new Map(this._store.categories().map((c) => [c.id, c]));
-    return this._store
-      .picks()
-      .map((pick) => {
-        const category = categoryById.get(pick.categoryId);
-        if (category === undefined) return null;
-        const available = this._store.availableInCategory(pick.categoryId);
-        return {
-          pick,
-          category,
-          available,
-          effective: this._store.effectivePickCount(pick),
-        };
-      })
-      .filter((row): row is PickRow => row !== null);
-  });
+  protected readonly _rows = computed<readonly PickRow[]>(() =>
+    this._buildRows(this._store.picks(), this._store.categories()),
+  );
 
   protected readonly _enabledRows = computed(() => this._rows().filter((r) => r.pick.enabled));
   protected readonly _enabledCount = computed(() => this._enabledRows().length);
@@ -80,6 +66,25 @@ export class NewInterviewComponent {
     const rows = this._rows();
     return rows.length > 0 && rows.every((r) => r.pick.enabled);
   });
+
+  private _buildRows(
+    picks: readonly CategoryPick[],
+    categories: readonly Category[],
+  ): readonly PickRow[] {
+    const categoryById = new Map(categories.map((c) => [c.id, c]));
+    const rows: PickRow[] = [];
+    for (const pick of picks) {
+      const category = categoryById.get(pick.categoryId);
+      if (category === undefined) continue;
+      rows.push({
+        pick,
+        category,
+        available: this._store.availableInCategory(pick.categoryId),
+        effective: this._store.effectivePickCount(pick),
+      });
+    }
+    return rows;
+  }
 
   constructor() {
     // Auto-pick the first template once they load
