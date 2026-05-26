@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { EMPTY, Observable, of, switchMap } from 'rxjs';
 import {
   CLOUD_PROVIDERS,
@@ -31,6 +32,9 @@ export class CloudActions {
   private readonly _workspace = inject(WorkspaceService);
   private readonly _providers = inject(CLOUD_PROVIDERS);
   private readonly _sync = inject(CloudSyncService);
+  private readonly _router = inject(Router);
+
+  private readonly _defaultRoute = ['/templates'];
 
   constructor() {
     this._sync.setDelegate({
@@ -77,10 +81,14 @@ export class CloudActions {
 
   /**
    * Switch the active workspace. WorkspaceService observes activeId and
-   * does the heavy lifting (swap DB, reload, sync).
+   * does the heavy lifting (swap DB, reload, sync). The user gets sent
+   * to the default route — staying on, say, an editor for a template
+   * that may not exist in the new workspace would be confusing.
    */
   activate(id: AccountId): void {
+    if (this._accounts.activeId() === id) return;
     this._accounts.setActive(id);
+    void this._router.navigate(this._defaultRoute);
   }
 
   /**
@@ -91,7 +99,11 @@ export class CloudActions {
    */
   disconnect(id: AccountId): void {
     if (id === LOCAL_ACCOUNT_ID) return;
+    const wasActive = this._accounts.activeId() === id;
     this._accounts.remove(id);
+    if (wasActive) {
+      void this._router.navigate(this._defaultRoute);
+    }
   }
 
   syncNow(): Observable<void> {
@@ -119,6 +131,7 @@ export class CloudActions {
     }
     // Setting active fires WorkspaceService's swap → open new DB → syncNow.
     this._accounts.setActive(id);
+    void this._router.navigate(this._defaultRoute);
     return of(undefined);
   }
 
