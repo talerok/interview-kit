@@ -320,6 +320,11 @@
     color: var(--fg-subtle);
     margin-inline-start: 6px;
     font-family: var(--font-mono);
+    // Reserve width for "из 999" so 1-vs-2-digit counts don't shift the
+    // stepper position between rows. Each .pick row is its own grid, so
+    // any width drift in one child propagates outward.
+    min-inline-size: 44px;
+    text-align: start;
   }
 
   &__mode {
