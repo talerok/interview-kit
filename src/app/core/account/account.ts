@@ -3,7 +3,13 @@
 // OAuth success and identified by `${kind}:${email}` so reconnecting the
 // same Dropbox account doesn't fork a new workspace.
 
-export type AccountKind = 'local' | 'dropbox';
+export const LOCAL_KIND = 'local' as const;
+export type LocalKind = typeof LOCAL_KIND;
+
+/** Every cloud provider's account-kind discriminator. Extend as providers grow. */
+export type CloudAccountKind = 'dropbox';
+
+export type AccountKind = LocalKind | CloudAccountKind;
 
 export type AccountId = string;
 
@@ -22,11 +28,11 @@ export interface AccountsRegistry {
   readonly accounts: readonly Account[];
 }
 
-export const LOCAL_ACCOUNT_ID: AccountId = 'local';
+export const LOCAL_ACCOUNT_ID: AccountId = LOCAL_KIND;
 
 export const LOCAL_ACCOUNT: Account = {
   id: LOCAL_ACCOUNT_ID,
-  kind: 'local',
+  kind: LOCAL_KIND,
   label: 'Локально',
   email: null,
   accessToken: null,
@@ -39,8 +45,14 @@ export const initialRegistry = (): AccountsRegistry => ({
   accounts: [LOCAL_ACCOUNT],
 });
 
-export const accountIdFor = (kind: Exclude<AccountKind, 'local'>, email: string): AccountId =>
+export const accountIdFor = (kind: CloudAccountKind, email: string): AccountId =>
   `${kind}:${email.toLowerCase().trim()}`;
+
+export const isLocalAccount = (a: Account): boolean => a.kind === LOCAL_KIND;
+
+export const isCloudAccount = (
+  a: Account,
+): a is Account & { readonly kind: CloudAccountKind } => a.kind !== LOCAL_KIND;
 
 /** IDB name for the data workspace owned by an account. */
 export const dbNameFor = (accountId: AccountId): string =>

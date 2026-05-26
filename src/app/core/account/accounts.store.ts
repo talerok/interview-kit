@@ -4,6 +4,7 @@ import {
   AccountId,
   AccountsRegistry,
   LOCAL_ACCOUNT_ID,
+  isCloudAccount,
 } from './account';
 import { AccountsRepo } from './accounts-repo';
 
@@ -33,13 +34,13 @@ export class AccountsStore {
 
   /** Cloud accounts only (the local workspace is excluded). */
   readonly cloudAccounts: Signal<readonly Account[]> = computed(() =>
-    this.accounts().filter((a) => a.kind !== 'local'),
+    this.accounts().filter(isCloudAccount),
   );
 
   /** True when the active account is a cloud account with valid credentials. */
   readonly isConnected: Signal<boolean> = computed(() => {
     const a = this.activeAccount();
-    return a !== null && a.kind !== 'local' && a.accessToken !== null;
+    return a !== null && isCloudAccount(a) && a.accessToken !== null;
   });
 
   upsert(account: Account): void {

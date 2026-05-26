@@ -11,8 +11,10 @@ import {
   AccountId,
   AccountKind,
   AccountsStore,
+  CloudAccountKind,
   LOCAL_ACCOUNT_ID,
   accountIdFor,
+  isCloudAccount,
 } from '../../../../core/account';
 import { WorkspaceService } from '../../../../core/workspace';
 import { CloudStore } from './cloud.store';
@@ -34,7 +36,7 @@ export class CloudActions {
     this._sync.setDelegate({
       activeProvider: () => {
         const a = this._accounts.activeAccount();
-        if (a === null || a.kind === 'local' || a.accessToken === null) return null;
+        if (a === null || !isCloudAccount(a) || a.accessToken === null) return null;
         return this._providerOf(a.kind);
       },
       onSyncCompleted: () => {
@@ -56,7 +58,7 @@ export class CloudActions {
    * immediately; real OAuth navigates away and the flow continues in
    * `finalizeOAuth` after the callback route loads.
    */
-  connect(kind: Exclude<AccountKind, 'local'>): Observable<void> {
+  connect(kind: CloudAccountKind): Observable<void> {
     const provider = this._providerOf(kind);
     if (provider === null) return EMPTY;
     return provider.beginAuthorize().pipe(
@@ -65,7 +67,7 @@ export class CloudActions {
   }
 
   /** OAuth callback: exchange code for tokens, then upsert + activate. */
-  finalizeOAuth(kind: Exclude<AccountKind, 'local'>, params: URLSearchParams): Observable<void> {
+  finalizeOAuth(kind: CloudAccountKind, params: URLSearchParams): Observable<void> {
     const provider = this._providerOf(kind);
     if (provider === null) return EMPTY;
     return provider.completeAuthorize(params).pipe(
