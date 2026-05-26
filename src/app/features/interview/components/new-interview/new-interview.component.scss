@@ -428,11 +428,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
-
-  &__date {
-    max-inline-size: 240px;
-    margin-block-start: var(--space-2);
-  }
 }
 
 .field {
@@ -509,19 +504,6 @@
     border: 0;
     border-block-start: 1px solid var(--border-subtle);
     margin-block: var(--space-1);
-  }
-
-  &__note {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--text-xs);
-    color: var(--fg-muted);
-  }
-
-  &__cta {
-    justify-content: center;
-    margin-block-start: var(--space-2);
   }
 
   &__breakdown {
