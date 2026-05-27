@@ -1,8 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, map, tap } from 'rxjs';
 import { CloudSyncService } from '../../../../../../api/cloud';
-
-const MS_PER_MINUTE = 60_000;
 import {
   Answer,
   AnswerScore,
@@ -13,6 +11,8 @@ import {
 import { InterviewRepo } from '../../../../models/data/interview.repo';
 import { InterviewsActions } from '../../../../models/state/interviews.actions';
 import { RunnerStore } from './runner.store';
+
+const MS_PER_MINUTE = 60_000;
 
 @Injectable()
 export class RunnerActions {

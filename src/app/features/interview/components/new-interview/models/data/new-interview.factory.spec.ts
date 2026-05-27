@@ -1,0 +1,123 @@
+import { describe, expect, it } from 'vitest';
+import { asId } from '../../../../../../shared/utils';
+import {
+  CategoryId,
+  Question,
+  QuestionId,
+  TemplateId,
+} from '../../../../../templates/interfaces/template';
+import { CategoryPick } from '../state/new-interview.store';
+import { buildNewInterviewAggregate } from './new-interview.factory';
+
+const TID = asId<'TemplateId'>('t1') as TemplateId;
+const CAT_A = asId<'CategoryId'>('ca') as CategoryId;
+const CAT_B = asId<'CategoryId'>('cb') as CategoryId;
+
+const question = (id: string, categoryId: CategoryId, order: number): Question => ({
+  id: asId<'QuestionId'>(id) as QuestionId,
+  templateId: TID,
+  categoryId,
+  text: `q ${id}`,
+  weight: 1,
+  order,
+});
+
+const pick = (
+  categoryId: CategoryId,
+  count: number,
+  mode: 'random' | 'first' = 'first',
+  enabled = true,
+): CategoryPick => ({ categoryId, enabled, count, mode });
+
+const buckets = {
+  [CAT_A]: [question('a1', CAT_A, 0), question('a2', CAT_A, 1), question('a3', CAT_A, 2)],
+  [CAT_B]: [question('b1', CAT_B, 0), question('b2', CAT_B, 1)],
+};
+
+const candidate = { name: 'Анна', position: 'Backend', date: '2026-05-25' };
+
+describe('buildNewInterviewAggregate', () => {
+  it("'first' mode takes questions in their order field", () => {
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_A, 2, 'first')],
+      questionsByCategory: buckets,
+      runOrder: 'sequential',
+    });
+    expect(out.answers.map((a) => a.questionId)).toEqual(['a1', 'a2']);
+  });
+
+  it("'first' mode clamps count to available questions", () => {
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_A, 99, 'first')],
+      questionsByCategory: buckets,
+      runOrder: 'sequential',
+    });
+    expect(out.answers).toHaveLength(3);
+  });
+
+  it("disabled picks contribute zero questions", () => {
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_A, 2, 'first', false), pick(CAT_B, 1, 'first')],
+      questionsByCategory: buckets,
+      runOrder: 'sequential',
+    });
+    expect(out.answers).toHaveLength(1);
+    expect(out.answers[0].questionId).toBe('b1');
+  });
+
+  it('sequential run-order groups answers by pick order', () => {
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_B, 2, 'first'), pick(CAT_A, 2, 'first')],
+      questionsByCategory: buckets,
+      runOrder: 'sequential',
+    });
+    expect(out.answers.map((a) => a.categoryId)).toEqual([CAT_B, CAT_B, CAT_A, CAT_A]);
+  });
+
+  it('answer.order is contiguous 0..N-1 regardless of run-order', () => {
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_A, 3, 'first'), pick(CAT_B, 2, 'first')],
+      questionsByCategory: buckets,
+      runOrder: 'shuffled',
+    });
+    expect(out.answers.map((a) => a.order)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('interview seed has rev=1, status=in-progress, zero stats', () => {
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_A, 1, 'first')],
+      questionsByCategory: buckets,
+      runOrder: 'sequential',
+    });
+    expect(out.interview.rev).toBe(1);
+    expect(out.interview.status).toBe('in-progress');
+    expect(out.interview.answeredCount).toBe(0);
+    expect(out.interview.skippedCount).toBe(0);
+    expect(out.interview.avg).toBe(0);
+    expect(out.interview.answersCount).toBe(1);
+  });
+
+  it('candidate is copied into the interview (defensive clone)', () => {
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_A, 1, 'first')],
+      questionsByCategory: buckets,
+      runOrder: 'sequential',
+    });
+    expect(out.interview.candidate).toEqual(candidate);
+    expect(out.interview.candidate).not.toBe(candidate);
+  });
+});

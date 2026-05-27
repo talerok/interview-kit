@@ -139,6 +139,10 @@ export class TemplateEditorStore {
     this._filter.set(value);
   }
 
+  startAdding(): void {
+    this._editing.set('new');
+  }
+
   startEditing(target: EditingTarget): void {
     this._editing.set(target);
   }

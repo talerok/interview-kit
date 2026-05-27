@@ -143,22 +143,6 @@ export class TemplateEditorActions {
     );
   }
 
-  setFilter(id: CategoryId | null): void {
-    this._store.setFilter(id);
-  }
-
-  startAdding(): void {
-    this._store.startEditing('new');
-  }
-
-  startEditing(id: QuestionId): void {
-    this._store.startEditing(id);
-  }
-
-  cancelEditing(): void {
-    this._store.cancelEditing();
-  }
-
   private _currentTemplateId(): TemplateId | null {
     return this._store.template()?.id ?? null;
   }

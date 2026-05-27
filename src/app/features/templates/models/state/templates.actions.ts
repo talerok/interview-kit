@@ -1,19 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { CloudSyncService } from '../../../../api/cloud';
-import { asId, colorFromName, newId } from '../../../../shared/utils';
+import { buildNewTemplateAggregate } from '../data/template.factory';
 import { TemplateRepo } from '../data/template.repo';
 import {
-  CATEGORY_PRESETS,
-  deriveTemplateCode,
-} from '../../constants/template-presets.const';
-import {
-  Category,
-  CategoryId,
   CreateTemplateInput,
-  Question,
   Template,
-  TemplateAggregate,
   TemplateId,
 } from '../../interfaces/template';
 import { TemplatesStore } from './templates.store';
@@ -25,7 +17,7 @@ export class TemplatesActions {
   private readonly _cloudSync = inject(CloudSyncService);
 
   create(input: CreateTemplateInput): Observable<Template> {
-    const aggregate = this._buildNewAggregate(input);
+    const aggregate = buildNewTemplateAggregate(input);
     return this._repo.createAggregate(aggregate).pipe(
       map(() => aggregate.template),
       tap((template) => {
@@ -48,42 +40,5 @@ export class TemplatesActions {
   replaceTemplate(template: Template): void {
     this._store.upsert(template, (t) => t.id);
     this._cloudSync.markDirty({ kind: 'template', id: template.id });
-  }
-
-  private _buildNewAggregate(input: CreateTemplateInput): TemplateAggregate {
-    const now = new Date().toISOString();
-    const templateId = newId<'TemplateId'>();
-    const preset = CATEGORY_PRESETS.find((p) => p.key === input.categoryPreset);
-    const categories: readonly Category[] = (preset?.categories ?? []).map((seed, i) => ({
-      id: newId<'CategoryId'>(),
-      templateId,
-      label: seed.label,
-      color: colorFromName(seed.label),
-      order: i,
-    }));
-    const questions: readonly Question[] = [];
-    const name = input.name.trim();
-    const template: Template = {
-      id: templateId,
-      code: deriveTemplateCode(name),
-      name,
-      description: input.description.trim(),
-      color: colorFromName(name),
-      rev: 1,
-      categoryCount: categories.length,
-      questionCount: questions.length,
-      createdAt: now,
-      updatedAt: now,
-    };
-    return { template, categories, questions };
-  }
-
-  // Helper for routing/components when wiring template-id from URL params.
-  toTemplateId(value: string): TemplateId {
-    return asId<'TemplateId'>(value);
-  }
-
-  toCategoryId(value: string): CategoryId {
-    return asId<'CategoryId'>(value);
   }
 }
