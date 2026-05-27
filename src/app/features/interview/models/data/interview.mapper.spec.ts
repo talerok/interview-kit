@@ -32,6 +32,7 @@ const ANSWER_DTO: AnswerDto = {
   categoryId: 'c1',
   questionText: 'Сложность quicksort',
   questionWeight: 2,
+  questionCriteria: '',
   score: 4,
   comment: 'Раскрыл хорошо',
   skipped: false,
@@ -81,6 +82,11 @@ describe('interview.mapper', () => {
       const domain = toAnswer(dto);
       expect(domain.categoryId).toBeNull();
       expect(toAnswerDto(domain).categoryId).toBeNull();
+    });
+
+    it('defaults missing questionCriteria to empty string (legacy rows)', () => {
+      const { questionCriteria: _omit, ...legacy } = ANSWER_DTO;
+      expect(toAnswer(legacy).questionCriteria).toBe('');
     });
 
     it('preserves null score for unanswered/skipped questions', () => {

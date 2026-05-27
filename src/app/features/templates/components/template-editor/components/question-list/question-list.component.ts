@@ -59,7 +59,7 @@ export class QuestionListComponent {
     if (q === null) {
       return null;
     }
-    return { text: q.text, categoryId: q.categoryId, weight: q.weight };
+    return { text: q.text, categoryId: q.categoryId, weight: q.weight, criteria: q.criteria };
   });
 
   /**

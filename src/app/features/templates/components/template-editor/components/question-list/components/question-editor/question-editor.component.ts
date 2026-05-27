@@ -12,12 +12,14 @@ export interface QuestionDraft {
   readonly text: string;
   readonly categoryId: CategoryId | null;
   readonly weight: QuestionWeight;
+  readonly criteria: string;
 }
 
 interface FormModel {
   readonly text: string;
   readonly categoryId: string;
   readonly weight: QuestionWeight;
+  readonly criteria: string;
 }
 
 const NONE = '__none__';
@@ -26,6 +28,7 @@ const fromDraft = (draft: QuestionDraft | null): FormModel => ({
   text: draft?.text ?? '',
   categoryId: draft?.categoryId ?? NONE,
   weight: draft?.weight ?? 2,
+  criteria: draft?.criteria ?? '',
 });
 
 @Component({
@@ -100,6 +103,7 @@ export class QuestionEditorComponent {
         text: value.text,
         categoryId: value.categoryId === NONE ? null : (value.categoryId as CategoryId),
         weight: value.weight,
+        criteria: value.criteria,
       });
     });
   }

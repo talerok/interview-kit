@@ -114,7 +114,7 @@ describe('TemplateRepo', () => {
         repo.addCategory({ templateId: tid, label: 'Algo', color: '#1' }),
       );
       const { question: q } = await firstValueFrom(
-        repo.addQuestion({ templateId: tid, text: 'Q?', categoryId: cat.id, weight: 2 }),
+        repo.addQuestion({ templateId: tid, text: 'Q?', categoryId: cat.id, weight: 2, criteria: '' }),
       );
 
       await firstValueFrom(repo.deleteCategory(tid, cat.id));
@@ -150,6 +150,7 @@ describe('TemplateRepo', () => {
           text: '  Что такое eventual consistency?  ',
           categoryId: null,
           weight: 3,
+          criteria: '',
         }),
       );
       expect(question.text).toBe('Что такое eventual consistency?');
@@ -160,7 +161,7 @@ describe('TemplateRepo', () => {
 
     it('deleteQuestion decrements questionCount and bumps rev', async () => {
       const { question: q } = await firstValueFrom(
-        repo.addQuestion({ templateId: tid, text: 'A', categoryId: null, weight: 1 }),
+        repo.addQuestion({ templateId: tid, text: 'A', categoryId: null, weight: 1, criteria: '' }),
       );
       const { template } = await firstValueFrom(repo.deleteQuestion(tid, q.id));
       expect(template.questionCount).toBe(0);
@@ -169,7 +170,7 @@ describe('TemplateRepo', () => {
 
     it('deleteQuestion clamps questionCount at 0', async () => {
       const { question: q } = await firstValueFrom(
-        repo.addQuestion({ templateId: tid, text: 'A', categoryId: null, weight: 1 }),
+        repo.addQuestion({ templateId: tid, text: 'A', categoryId: null, weight: 1, criteria: '' }),
       );
       await firstValueFrom(repo.deleteQuestion(tid, q.id));
       await firstValueFrom(repo.deleteQuestion(tid, q.id));
@@ -226,7 +227,7 @@ describe('TemplateRepo', () => {
         repo.addCategory({ templateId: tid, label: 'C', color: '#1' }),
       );
       await firstValueFrom(
-        repo.addQuestion({ templateId: tid, text: 'Q', categoryId: cat.id, weight: 1 }),
+        repo.addQuestion({ templateId: tid, text: 'Q', categoryId: cat.id, weight: 1, criteria: '' }),
       );
 
       await firstValueFrom(repo.delete(tid));
@@ -244,7 +245,7 @@ describe('TemplateRepo', () => {
       repo.addCategory({ templateId: tid, label: 'A', color: '#1' }),
     );
     const { template: t2 } = await firstValueFrom(
-      repo.addQuestion({ templateId: tid, text: 'Q', categoryId: null, weight: 1 }),
+      repo.addQuestion({ templateId: tid, text: 'Q', categoryId: null, weight: 1, criteria: '' }),
     );
     const t3 = await firstValueFrom(repo.updateMeta({ templateId: tid, name: 'Renamed' }));
     expect(t1.rev).toBe(before.rev + 1);

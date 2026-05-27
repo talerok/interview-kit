@@ -39,6 +39,7 @@ const answer = (
   categoryId: null,
   questionText: `Q ${id}`,
   questionWeight: 1,
+  questionCriteria: '',
   score,
   comment: '',
   skipped,

@@ -41,6 +41,7 @@ const QUESTION_DTO: QuestionDto = {
   text: 'Объясните сложность quicksort',
   weight: 2,
   order: 3,
+  criteria: '',
 };
 
 describe('template.mapper', () => {
@@ -80,6 +81,11 @@ describe('template.mapper', () => {
       const domain = toQuestion(dto);
       expect(domain.categoryId).toBeNull();
       expect(toQuestionDto(domain).categoryId).toBeNull();
+    });
+
+    it('defaults missing criteria to empty string (legacy rows)', () => {
+      const { criteria: _omit, ...legacy } = QUESTION_DTO;
+      expect(toQuestion(legacy).criteria).toBe('');
     });
   });
 });

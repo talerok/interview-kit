@@ -56,6 +56,7 @@ const answer = (
   categoryId,
   questionText: '',
   questionWeight: 1,
+  questionCriteria: '',
   score,
   comment: '',
   skipped,

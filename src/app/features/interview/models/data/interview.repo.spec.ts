@@ -39,6 +39,7 @@ const buildAnswer = (interviewId: InterviewId, id: string, order: number): Answe
   categoryId: null,
   questionText: `Q ${id}`,
   questionWeight: 1,
+  questionCriteria: '',
   score: null,
   comment: '',
   skipped: false,

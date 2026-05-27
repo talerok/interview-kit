@@ -36,6 +36,8 @@ export interface Answer {
   readonly categoryId: CategoryId | null;
   readonly questionText: string;
   readonly questionWeight: 1 | 2 | 3;
+  /** Snapshot of the question's interviewer-only hint. Empty when no criteria were set. */
+  readonly questionCriteria: string;
   readonly score: AnswerScore | null;
   readonly comment: string;
   readonly skipped: boolean;

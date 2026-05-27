@@ -21,6 +21,8 @@ export interface Question {
   readonly text: string;
   readonly weight: QuestionWeight;
   readonly order: number;
+  /** Free-text guidance shown to the interviewer during the run. Not surfaced in results. */
+  readonly criteria: string;
 }
 
 export interface Template {

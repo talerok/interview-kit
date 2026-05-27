@@ -43,6 +43,7 @@ export interface CreateQuestionInput {
   readonly text: string;
   readonly categoryId: CategoryId | null;
   readonly weight: QuestionWeight;
+  readonly criteria: string;
 }
 
 export interface UpdateMetaInput {
@@ -203,6 +204,7 @@ export class TemplateRepo {
         text: input.text.trim(),
         weight: input.weight,
         order: templateDto.questionCount,
+        criteria: input.criteria.trim(),
       };
       await tx.objectStore<QuestionDto>(STORES.questions).put(questionDto);
       const next = await this._bumpTemplate(tx, input.templateId, (current) => ({

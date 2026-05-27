@@ -58,6 +58,16 @@
 
         <div class="q-prompt">{{ answer.questionText }}</div>
 
+        @if (answer.questionCriteria) {
+          <aside class="q-criteria">
+            <div class="q-criteria__label">
+              <app-icon name="notes" /> Критерии
+              <span class="q-criteria__tag">для интервьюера</span>
+            </div>
+            <p class="q-criteria__body">{{ answer.questionCriteria }}</p>
+          </aside>
+        }
+
         <div class="field">
           <span class="field__label">Оценка ответа</span>
           <div class="scale">

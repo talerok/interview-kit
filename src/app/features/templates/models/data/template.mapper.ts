@@ -51,6 +51,7 @@ export const toQuestion = (dto: QuestionDto): Question => ({
   text: dto.text,
   weight: dto.weight,
   order: dto.order,
+  criteria: dto.criteria ?? '',
 });
 
 export const toQuestionDto = (model: Question): QuestionDto => ({
@@ -60,4 +61,5 @@ export const toQuestionDto = (model: Question): QuestionDto => ({
   text: model.text,
   weight: model.weight,
   order: model.order,
+  criteria: model.criteria,
 });

@@ -52,6 +52,7 @@ export const buildNewInterviewAggregate = (input: BuildInterviewInput): Intervie
     categoryId: q.categoryId,
     questionText: q.text,
     questionWeight: q.weight,
+    questionCriteria: q.criteria,
     score: null,
     comment: '',
     skipped: false,

@@ -44,6 +44,7 @@ const question = (id: string, categoryId: CategoryId | null, order = 0): Questio
   text: id,
   weight: 1,
   order,
+  criteria: '',
 });
 
 const aggregate: TemplateAggregate = {

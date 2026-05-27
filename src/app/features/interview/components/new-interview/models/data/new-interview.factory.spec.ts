@@ -20,6 +20,7 @@ const question = (id: string, categoryId: CategoryId, order: number): Question =
   text: `q ${id}`,
   weight: 1,
   order,
+  criteria: '',
 });
 
 const pick = (
@@ -117,6 +118,7 @@ describe('buildNewInterviewAggregate', () => {
       text: 'q u1',
       weight: 1,
       order: 0,
+      criteria: '',
     };
     const out = buildNewInterviewAggregate({
       templateId: TID,

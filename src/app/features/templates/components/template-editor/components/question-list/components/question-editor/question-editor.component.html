@@ -28,6 +28,19 @@
     }
   </label>
 
+  <label class="field">
+    <span class="field__label">
+      Критерии
+      <span class="field__hint">видны только интервьюеру во время интервью</span>
+    </span>
+    <textarea
+      class="input textarea"
+      [formField]="_form.criteria"
+      rows="8"
+      placeholder="Что считать сильным/слабым ответом, на что обращать внимание…"
+    ></textarea>
+  </label>
+
   <div class="q-edit__grid">
     <div class="field">
       <span class="field__label">Категория</span>

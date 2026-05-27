@@ -29,6 +29,7 @@ export interface AddQuestionInput {
   readonly text: string;
   readonly categoryId: CategoryId | null;
   readonly weight: QuestionWeight;
+  readonly criteria: string;
 }
 
 @Injectable()
