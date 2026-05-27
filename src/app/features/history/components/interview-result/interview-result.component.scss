@@ -39,6 +39,10 @@
     color: var(--fg-strong);
     font-weight: 500;
   }
+
+  &__actions {
+    margin-inline-start: auto;
+  }
 }
 
 .page {

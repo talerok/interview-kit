@@ -19,6 +19,11 @@
       <app-icon name="chevron-right" />
       <span class="topbar__crumbs-current">{{ interview.candidate.name }}</span>
     </nav>
+    <div class="topbar__actions">
+      <button type="button" class="btn" (click)="_exportPdf()">
+        <app-icon name="download" /> Скачать PDF
+      </button>
+    </div>
   </header>
 
   <section class="page">

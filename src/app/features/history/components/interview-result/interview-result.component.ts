@@ -52,4 +52,8 @@ export class InterviewResultComponent implements OnInit {
     const id = asId<'InterviewId'>(this.id());
     this._actions.load(id).pipe(takeUntilDestroyed(this._destroyRef)).subscribe();
   }
+
+  protected _exportPdf(): void {
+    this._actions.exportPdf().pipe(takeUntilDestroyed(this._destroyRef)).subscribe();
+  }
 }
