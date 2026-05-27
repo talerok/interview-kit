@@ -160,10 +160,8 @@
   }
 }
 
-.textarea--mono {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  white-space: pre;
+.code {
+  height: 400px;
 }
 
 .cats {

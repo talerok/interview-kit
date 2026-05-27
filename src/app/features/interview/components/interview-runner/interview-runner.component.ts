@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { CodeEditorComponent } from '../../../../shared/ui/code-editor';
 import { IconComponent } from '../../../../shared/ui/icon';
 import { FmtDatePipe, PluralRuPipe } from '../../../../shared/pipes';
 import { asId } from '../../../../shared/utils';
@@ -19,7 +20,7 @@ import { RunnerStore } from './models/state/runner.store';
 
 @Component({
   selector: 'app-interview-runner',
-  imports: [RouterLink, IconComponent, FmtDatePipe, PluralRuPipe],
+  imports: [RouterLink, IconComponent, FmtDatePipe, PluralRuPipe, CodeEditorComponent],
   templateUrl: './interview-runner.component.html',
   styleUrl: './interview-runner.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,8 +61,7 @@ export class InterviewRunnerComponent implements OnInit {
     this._actions.setComment(comment).pipe(takeUntilDestroyed(this._destroyRef)).subscribe();
   }
 
-  protected _onCode(event: Event): void {
-    const code = (event.target as HTMLTextAreaElement).value;
+  protected _onCodeChange(code: string): void {
     this._actions.setCode(code).pipe(takeUntilDestroyed(this._destroyRef)).subscribe();
   }
 

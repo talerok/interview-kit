@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FormField, form, minLength, required } from '@angular/forms/signals';
+import { CodeEditorComponent } from '../../../../../../../../shared/ui/code-editor';
 import { IconComponent } from '../../../../../../../../shared/ui/icon';
 import { explicitEffect } from '../../../../../../../../shared/utils';
 import {
@@ -93,7 +94,7 @@ const LANGUAGES: readonly { readonly value: CodeLanguage; readonly label: string
 
 @Component({
   selector: 'app-question-editor',
-  imports: [FormField, IconComponent],
+  imports: [FormField, IconComponent, CodeEditorComponent],
   templateUrl: './question-editor.component.html',
   styleUrl: './question-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -171,6 +172,10 @@ export class QuestionEditorComponent {
 
   protected _setLanguage(language: CodeLanguage): void {
     this._model.update((m) => ({ ...m, language }));
+  }
+
+  protected _setStarterCode(starterCode: string): void {
+    this._model.update((m) => ({ ...m, starterCode }));
   }
 
   protected _onCancel(): void {

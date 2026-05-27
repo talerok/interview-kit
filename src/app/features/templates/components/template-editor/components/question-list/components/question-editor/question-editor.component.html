@@ -97,18 +97,19 @@
       }
     </label>
 
-    <label class="field">
+    <div class="field">
       <span class="field__label">
         Стартовый код
         <span class="field__hint">не обязательно</span>
       </span>
-      <textarea
-        class="input textarea textarea--mono"
-        [formField]="_form.starterCode"
-        rows="6"
+      <app-code-editor
+        class="code"
+        [value]="_model().starterCode"
+        (valueChange)="_setStarterCode($event)"
+        [language]="_model().language"
         placeholder="// boilerplate, который увидит кандидат при старте"
-      ></textarea>
-    </label>
+      />
+    </div>
   }
 
   <label class="field">

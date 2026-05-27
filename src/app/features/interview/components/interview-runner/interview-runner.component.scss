@@ -188,11 +188,9 @@
   margin: 0;
 }
 
-.textarea--mono {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  white-space: pre;
-  line-height: 1.6;
+.code {
+  --code-min-block-size: 380px;
+  --code-max-block-size: 60dvh;
 }
 
 .q-criteria {

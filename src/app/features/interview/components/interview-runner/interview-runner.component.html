@@ -80,17 +80,13 @@
               Код
               <span class="field__hint">{{ answer.questionLanguage }}</span>
             </span>
-            <textarea
-              class="input textarea textarea--mono"
-              rows="14"
-              placeholder="// решение пишем тут…"
+            <app-code-editor
+              class="code"
               [value]="answer.code"
-              (input)="_onCode($event)"
-              spellcheck="false"
-              autocorrect="off"
-              autocapitalize="off"
-              autocomplete="off"
-            ></textarea>
+              (valueChange)="_onCodeChange($event)"
+              [language]="answer.questionLanguage"
+              placeholder="// решение пишем тут…"
+            />
           </div>
         }
 
