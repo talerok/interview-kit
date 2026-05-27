@@ -3,7 +3,14 @@
     <li class="ans-row">
       <span class="ans-row__num">{{ (row.index + 1).toString().padStart(2, '0') }}</span>
       <div class="ans-row__main">
-        <div class="ans-row__q">{{ row.answer.questionText }}</div>
+        @if (row.answer.questionKind === 'coding') {
+          <div class="ans-row__title">{{ row.answer.questionText }}</div>
+          @if (row.answer.questionDescription) {
+            <div class="ans-row__desc">{{ row.answer.questionDescription }}</div>
+          }
+        } @else {
+          <div class="ans-row__q">{{ row.answer.questionText }}</div>
+        }
         <div class="ans-row__meta">
           @if (row.category; as c) {
             <span

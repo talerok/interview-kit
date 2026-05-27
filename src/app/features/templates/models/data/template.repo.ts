@@ -16,6 +16,7 @@ import { deriveTemplateCode } from '../../constants/template-presets.const';
 import {
   Category,
   CategoryId,
+  CodeLanguage,
   Question,
   QuestionId,
   QuestionWeight,
@@ -38,13 +39,27 @@ export interface CreateCategoryInput {
   readonly color: string;
 }
 
-export interface CreateQuestionInput {
+interface CreateQuestionInputBase {
   readonly templateId: TemplateId;
-  readonly text: string;
   readonly categoryId: CategoryId | null;
   readonly weight: QuestionWeight;
   readonly criteria: string;
 }
+
+export interface CreateVerbalQuestionInput extends CreateQuestionInputBase {
+  readonly kind: 'verbal';
+  readonly text: string;
+}
+
+export interface CreateCodingQuestionInput extends CreateQuestionInputBase {
+  readonly kind: 'coding';
+  readonly title: string;
+  readonly description: string;
+  readonly language: CodeLanguage;
+  readonly starterCode: string;
+}
+
+export type CreateQuestionInput = CreateVerbalQuestionInput | CreateCodingQuestionInput;
 
 export interface UpdateMetaInput {
   readonly templateId: TemplateId;
@@ -197,15 +212,7 @@ export class TemplateRepo {
         'readwrite',
       );
       const templateDto = await this._requireTemplate(tx, input.templateId);
-      const questionDto: QuestionDto = {
-        id: newId<'QuestionId'>(),
-        templateId: input.templateId,
-        categoryId: input.categoryId,
-        text: input.text.trim(),
-        weight: input.weight,
-        order: templateDto.questionCount,
-        criteria: input.criteria.trim(),
-      };
+      const questionDto = buildQuestionDto(input, templateDto.questionCount);
       await tx.objectStore<QuestionDto>(STORES.questions).put(questionDto);
       const next = await this._bumpTemplate(tx, input.templateId, (current) => ({
         ...current,
@@ -346,3 +353,26 @@ export class TemplateRepo {
     return next;
   }
 }
+
+const buildQuestionDto = (input: CreateQuestionInput, order: number): QuestionDto => {
+  const base = {
+    id: newId<'QuestionId'>(),
+    templateId: input.templateId,
+    categoryId: input.categoryId,
+    weight: input.weight,
+    order,
+    criteria: input.criteria.trim(),
+  };
+  if (input.kind === 'coding') {
+    return {
+      ...base,
+      kind: 'coding',
+      title: input.title.trim(),
+      description: input.description.trim(),
+      language: input.language,
+      // Whitespace is significant in source code — preserve verbatim.
+      starterCode: input.starterCode,
+    };
+  }
+  return { ...base, kind: 'verbal', text: input.text.trim() };
+};

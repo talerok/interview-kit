@@ -161,6 +161,38 @@
   color: var(--fg-strong);
   letter-spacing: -0.01em;
   white-space: pre-wrap;
+
+  &--title {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+  }
+}
+
+.q-lang {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--accent-subtle-bg);
+  color: var(--accent-subtle-fg);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: lowercase;
+}
+
+.q-desc {
+  font-size: var(--text-md);
+  color: var(--fg);
+  line-height: var(--leading-normal);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.textarea--mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: pre;
+  line-height: 1.6;
 }
 
 .q-criteria {

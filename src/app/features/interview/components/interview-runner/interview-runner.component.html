@@ -56,7 +56,13 @@
           </span>
         </div>
 
-        <div class="q-prompt">{{ answer.questionText }}</div>
+        @if (answer.questionKind === 'coding') {
+          <div class="q-prompt q-prompt--title">{{ answer.questionText }}</div>
+          <div class="q-lang">{{ answer.questionLanguage }}</div>
+          <p class="q-desc">{{ answer.questionDescription }}</p>
+        } @else {
+          <div class="q-prompt">{{ answer.questionText }}</div>
+        }
 
         @if (answer.questionCriteria) {
           <aside class="q-criteria">
@@ -66,6 +72,26 @@
             </div>
             <p class="q-criteria__body">{{ answer.questionCriteria }}</p>
           </aside>
+        }
+
+        @if (answer.questionKind === 'coding') {
+          <div class="field">
+            <span class="field__label">
+              Код
+              <span class="field__hint">{{ answer.questionLanguage }}</span>
+            </span>
+            <textarea
+              class="input textarea textarea--mono"
+              rows="14"
+              placeholder="// решение пишем тут…"
+              [value]="answer.code"
+              (input)="_onCode($event)"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+              autocomplete="off"
+            ></textarea>
+          </div>
         }
 
         <div class="field">

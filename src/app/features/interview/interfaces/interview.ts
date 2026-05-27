@@ -1,5 +1,10 @@
 import { Branded } from '../../../shared/utils';
-import { CategoryId, QuestionId, TemplateId } from '../../templates/interfaces/template';
+import {
+  CategoryId,
+  CodeLanguage,
+  QuestionId,
+  TemplateId,
+} from '../../templates/interfaces/template';
 
 export type InterviewId = Branded<string, 'InterviewId'>;
 export type AnswerId = Branded<string, 'AnswerId'>;
@@ -29,11 +34,12 @@ export interface Interview {
   readonly updatedAt: string;
 }
 
-export interface Answer {
+interface BaseAnswer {
   readonly id: AnswerId;
   readonly interviewId: InterviewId;
   readonly questionId: QuestionId;
   readonly categoryId: CategoryId | null;
+  /** For verbal: the question text. For coding: the task title. */
   readonly questionText: string;
   readonly questionWeight: 1 | 2 | 3;
   /** Snapshot of the question's interviewer-only hint. Empty when no criteria were set. */
@@ -43,6 +49,21 @@ export interface Answer {
   readonly skipped: boolean;
   readonly order: number;
 }
+
+export interface VerbalAnswer extends BaseAnswer {
+  readonly questionKind: 'verbal';
+}
+
+export interface CodingAnswer extends BaseAnswer {
+  readonly questionKind: 'coding';
+  readonly questionDescription: string;
+  readonly questionLanguage: CodeLanguage;
+  readonly questionStarterCode: string;
+  /** What the candidate produced. Seeded from `questionStarterCode` at interview start. */
+  readonly code: string;
+}
+
+export type Answer = VerbalAnswer | CodingAnswer;
 
 export interface InterviewAggregate {
   readonly interview: Interview;

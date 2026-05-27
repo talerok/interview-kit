@@ -38,6 +38,7 @@ const cat = (id: CategoryId, order: number): Category => ({
 });
 
 const question = (id: string, categoryId: CategoryId | null, order = 0): Question => ({
+  kind: 'verbal',
   id: asId<'QuestionId'>(id) as QuestionId,
   templateId: TID,
   categoryId,

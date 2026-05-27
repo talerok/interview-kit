@@ -5,6 +5,15 @@ export type CategoryId = Branded<string, 'CategoryId'>;
 export type QuestionId = Branded<string, 'QuestionId'>;
 
 export type QuestionWeight = 1 | 2 | 3;
+export type QuestionKind = 'verbal' | 'coding';
+export type CodeLanguage =
+  | 'javascript'
+  | 'typescript'
+  | 'python'
+  | 'sql'
+  | 'go'
+  | 'java'
+  | 'plain';
 
 export interface Category {
   readonly id: CategoryId;
@@ -14,16 +23,31 @@ export interface Category {
   readonly order: number;
 }
 
-export interface Question {
+/** Fields shared by every question kind. */
+interface BaseQuestion {
   readonly id: QuestionId;
   readonly templateId: TemplateId;
   readonly categoryId: CategoryId | null;
-  readonly text: string;
   readonly weight: QuestionWeight;
   readonly order: number;
   /** Free-text guidance shown to the interviewer during the run. Not surfaced in results. */
   readonly criteria: string;
 }
+
+export interface VerbalQuestion extends BaseQuestion {
+  readonly kind: 'verbal';
+  readonly text: string;
+}
+
+export interface CodingQuestion extends BaseQuestion {
+  readonly kind: 'coding';
+  readonly title: string;
+  readonly description: string;
+  readonly language: CodeLanguage;
+  readonly starterCode: string;
+}
+
+export type Question = VerbalQuestion | CodingQuestion;
 
 export interface Template {
   readonly id: TemplateId;

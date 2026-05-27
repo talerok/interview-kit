@@ -40,6 +40,13 @@ export class RunnerActions {
     return this._persistAnswer(next);
   }
 
+  setCode(code: string): Observable<void> {
+    // Guard: a verbal answer must not carry a `code` field.
+    if (this._store.currentAnswer()?.questionKind !== 'coding') return EMPTY;
+    const next = this._store.patchCurrentAnswer({ code });
+    return this._persistAnswer(next);
+  }
+
   skipCurrent(): Observable<void> {
     const next = this._store.patchCurrentAnswer({ skipped: true, score: null });
     return this._persistAnswer(next);

@@ -60,6 +60,11 @@ export class InterviewRunnerComponent implements OnInit {
     this._actions.setComment(comment).pipe(takeUntilDestroyed(this._destroyRef)).subscribe();
   }
 
+  protected _onCode(event: Event): void {
+    const code = (event.target as HTMLTextAreaElement).value;
+    this._actions.setCode(code).pipe(takeUntilDestroyed(this._destroyRef)).subscribe();
+  }
+
   protected _onNotes(event: Event): void {
     const notes = (event.target as HTMLTextAreaElement).value;
     this._actions.updateNotes(notes).pipe(takeUntilDestroyed(this._destroyRef)).subscribe();

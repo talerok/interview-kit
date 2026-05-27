@@ -56,10 +56,19 @@ export class QuestionListComponent {
 
   protected readonly _editingDraft = computed<QuestionDraft | null>(() => {
     const q = this._editingQuestion();
-    if (q === null) {
-      return null;
+    if (q === null) return null;
+    const base = { categoryId: q.categoryId, weight: q.weight, criteria: q.criteria };
+    if (q.kind === 'coding') {
+      return {
+        ...base,
+        kind: 'coding',
+        title: q.title,
+        description: q.description,
+        language: q.language,
+        starterCode: q.starterCode,
+      };
     }
-    return { text: q.text, categoryId: q.categoryId, weight: q.weight, criteria: q.criteria };
+    return { ...base, kind: 'verbal', text: q.text };
   });
 
   /**

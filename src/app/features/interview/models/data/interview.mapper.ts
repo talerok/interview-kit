@@ -40,30 +40,57 @@ export const toInterviewDto = (model: Interview): InterviewDto => ({
   updatedAt: model.updatedAt,
 });
 
-export const toAnswer = (dto: AnswerDto): Answer => ({
-  id: asId<'AnswerId'>(dto.id),
-  interviewId: asId<'InterviewId'>(dto.interviewId),
-  questionId: asId<'QuestionId'>(dto.questionId),
-  categoryId: dto.categoryId === null ? null : asId<'CategoryId'>(dto.categoryId),
-  questionText: dto.questionText,
-  questionWeight: dto.questionWeight,
-  questionCriteria: dto.questionCriteria ?? '',
-  score: dto.score,
-  comment: dto.comment,
-  skipped: dto.skipped,
-  order: dto.order,
-});
+export const toAnswer = (dto: AnswerDto): Answer => {
+  const kind = dto.questionKind ?? 'verbal';
+  const base = {
+    id: asId<'AnswerId'>(dto.id),
+    interviewId: asId<'InterviewId'>(dto.interviewId),
+    questionId: asId<'QuestionId'>(dto.questionId),
+    categoryId: dto.categoryId === null ? null : asId<'CategoryId'>(dto.categoryId),
+    questionText: dto.questionText,
+    questionWeight: dto.questionWeight,
+    questionCriteria: dto.questionCriteria ?? '',
+    score: dto.score,
+    comment: dto.comment,
+    skipped: dto.skipped,
+    order: dto.order,
+  };
+  if (kind === 'coding') {
+    return {
+      ...base,
+      questionKind: 'coding',
+      questionDescription: dto.questionDescription ?? '',
+      questionLanguage: dto.questionLanguage ?? 'plain',
+      questionStarterCode: dto.questionStarterCode ?? '',
+      code: dto.code ?? '',
+    };
+  }
+  return { ...base, questionKind: 'verbal' };
+};
 
-export const toAnswerDto = (model: Answer): AnswerDto => ({
-  id: model.id,
-  interviewId: model.interviewId,
-  questionId: model.questionId,
-  categoryId: model.categoryId,
-  questionText: model.questionText,
-  questionWeight: model.questionWeight,
-  questionCriteria: model.questionCriteria,
-  score: model.score,
-  comment: model.comment,
-  skipped: model.skipped,
-  order: model.order,
-});
+export const toAnswerDto = (model: Answer): AnswerDto => {
+  const base = {
+    id: model.id,
+    interviewId: model.interviewId,
+    questionId: model.questionId,
+    categoryId: model.categoryId,
+    questionKind: model.questionKind,
+    questionText: model.questionText,
+    questionWeight: model.questionWeight,
+    questionCriteria: model.questionCriteria,
+    score: model.score,
+    comment: model.comment,
+    skipped: model.skipped,
+    order: model.order,
+  };
+  if (model.questionKind === 'coding') {
+    return {
+      ...base,
+      questionDescription: model.questionDescription,
+      questionLanguage: model.questionLanguage,
+      questionStarterCode: model.questionStarterCode,
+      code: model.code,
+    };
+  }
+  return base;
+};

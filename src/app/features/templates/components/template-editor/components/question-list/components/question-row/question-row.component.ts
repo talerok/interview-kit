@@ -21,8 +21,20 @@ export class QuestionRowComponent {
   readonly remove = output<QuestionId>();
 
   protected readonly _expanded = signal(false);
+
+  /** Body text used for the row preview — verbal text or coding description. */
+  protected readonly _previewText = computed(() => {
+    const q = this.question();
+    return q.kind === 'coding' ? q.description : q.text;
+  });
+
+  protected readonly _codingLanguage = computed(() => {
+    const q = this.question();
+    return q.kind === 'coding' ? q.language : null;
+  });
+
   protected readonly _isLong = computed(() => {
-    const text = this.question().text;
+    const text = this._previewText();
     return text.length > CLAMP_CHAR_THRESHOLD || text.split('\n').length > CLAMP_LINE_THRESHOLD;
   });
 

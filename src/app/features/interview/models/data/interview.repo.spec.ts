@@ -37,6 +37,7 @@ const buildAnswer = (interviewId: InterviewId, id: string, order: number): Answe
   interviewId,
   questionId: `q-${id}` as never,
   categoryId: null,
+  questionKind: 'verbal',
   questionText: `Q ${id}`,
   questionWeight: 1,
   questionCriteria: '',

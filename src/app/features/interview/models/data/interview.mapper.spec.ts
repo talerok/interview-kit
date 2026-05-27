@@ -30,6 +30,7 @@ const ANSWER_DTO: AnswerDto = {
   interviewId: 'iv1',
   questionId: 'q1',
   categoryId: 'c1',
+  questionKind: 'verbal',
   questionText: 'Сложность quicksort',
   questionWeight: 2,
   questionCriteria: '',
@@ -37,6 +38,25 @@ const ANSWER_DTO: AnswerDto = {
   comment: 'Раскрыл хорошо',
   skipped: false,
   order: 0,
+};
+
+const CODING_ANSWER_DTO: AnswerDto = {
+  id: 'a2',
+  interviewId: 'iv1',
+  questionId: 'q2',
+  categoryId: null,
+  questionKind: 'coding',
+  questionText: 'LRU cache',
+  questionDescription: 'Реализуйте LRU-кэш с O(1) операциями.',
+  questionLanguage: 'typescript',
+  questionStarterCode: '',
+  questionWeight: 3,
+  questionCriteria: '',
+  score: 5,
+  comment: '',
+  skipped: false,
+  order: 1,
+  code: 'class LRU { /* … */ }',
 };
 
 describe('interview.mapper', () => {
@@ -89,11 +109,48 @@ describe('interview.mapper', () => {
       expect(toAnswer(legacy).questionCriteria).toBe('');
     });
 
+    it('defaults missing questionKind to verbal (legacy rows)', () => {
+      const { questionKind: _omit, ...legacy } = ANSWER_DTO;
+      expect(toAnswer(legacy).questionKind).toBe('verbal');
+    });
+
     it('preserves null score for unanswered/skipped questions', () => {
       const dto: AnswerDto = { ...ANSWER_DTO, score: null, skipped: true };
       const domain = toAnswer(dto);
       expect(domain.score).toBeNull();
       expect(domain.skipped).toBe(true);
+    });
+
+    it('round-trips a coding AnswerDto including snapshot + code output', () => {
+      const domain = toAnswer(CODING_ANSWER_DTO);
+      expect(domain.questionKind).toBe('coding');
+      if (domain.questionKind !== 'coding') throw new Error('expected coding');
+      expect(domain.questionLanguage).toBe('typescript');
+      expect(domain.code).toBe('class LRU { /* … */ }');
+      expect(toAnswerDto(domain)).toEqual(CODING_ANSWER_DTO);
+    });
+
+    it('coding mapper fills defaults for missing optional fields', () => {
+      const sparse: AnswerDto = {
+        id: 'a3',
+        interviewId: 'iv1',
+        questionId: 'q3',
+        categoryId: null,
+        questionKind: 'coding',
+        questionText: 'No-op',
+        questionWeight: 1,
+        score: null,
+        comment: '',
+        skipped: false,
+        order: 0,
+      };
+      const domain = toAnswer(sparse);
+      expect(domain.questionKind).toBe('coding');
+      if (domain.questionKind !== 'coding') throw new Error('expected coding');
+      expect(domain.questionDescription).toBe('');
+      expect(domain.questionLanguage).toBe('plain');
+      expect(domain.questionStarterCode).toBe('');
+      expect(domain.code).toBe('');
     });
   });
 });

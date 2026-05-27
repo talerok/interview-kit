@@ -335,15 +335,30 @@ const answerIndexCell = (index: number) => ({
   margin: [0, 2, 8, 0],
 });
 
-const answerBodyCell = (a: Answer, categoryById: Map<CategoryId, Category>) => ({
-  stack: [
-    { text: a.questionText, fontSize: 11, color: COLOR.fgStrong, lineHeight: 1.4 },
-    { text: answerMeta(a, categoryById), fontSize: 8.5, margin: mt(4) },
-    ...(a.comment
-      ? [{ text: a.comment, fontSize: 9.5, color: COLOR.fgMuted, lineHeight: 1.45, margin: mt(6) }]
-      : []),
-  ],
-});
+const answerBodyCell = (a: Answer, categoryById: Map<CategoryId, Category>) => {
+  const isCoding = a.questionKind === 'coding';
+  const header = isCoding
+    ? { text: a.questionText, fontSize: 12, bold: true, color: COLOR.fgStrong, lineHeight: 1.3 }
+    : { text: a.questionText, fontSize: 11, color: COLOR.fgStrong, lineHeight: 1.4 };
+  return {
+    stack: [
+      header,
+      ...(isCoding && a.questionDescription
+        ? [{
+            text: a.questionDescription,
+            fontSize: 9.5,
+            color: COLOR.fgMuted,
+            lineHeight: 1.45,
+            margin: mt(4),
+          }]
+        : []),
+      { text: answerMeta(a, categoryById), fontSize: 8.5, margin: mt(4) },
+      ...(a.comment
+        ? [{ text: a.comment, fontSize: 9.5, color: COLOR.fgMuted, lineHeight: 1.45, margin: mt(6) }]
+        : []),
+    ],
+  };
+};
 
 const answerMeta = (a: Answer, categoryById: Map<CategoryId, Category>) => {
   const cat = a.categoryId !== null ? (categoryById.get(a.categoryId) ?? null) : null;

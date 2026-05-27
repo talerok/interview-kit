@@ -44,22 +44,46 @@ export const toCategoryDto = (model: Category): CategoryDto => ({
   order: model.order,
 });
 
-export const toQuestion = (dto: QuestionDto): Question => ({
-  id: asId<'QuestionId'>(dto.id),
-  templateId: asId<'TemplateId'>(dto.templateId),
-  categoryId: dto.categoryId === null ? null : asId<'CategoryId'>(dto.categoryId),
-  text: dto.text,
-  weight: dto.weight,
-  order: dto.order,
-  criteria: dto.criteria ?? '',
-});
+export const toQuestion = (dto: QuestionDto): Question => {
+  const base = {
+    id: asId<'QuestionId'>(dto.id),
+    templateId: asId<'TemplateId'>(dto.templateId),
+    categoryId: dto.categoryId === null ? null : asId<'CategoryId'>(dto.categoryId),
+    weight: dto.weight,
+    order: dto.order,
+    criteria: dto.criteria ?? '',
+  };
+  if (dto.kind === 'coding') {
+    return {
+      ...base,
+      kind: 'coding',
+      title: dto.title ?? '',
+      description: dto.description ?? '',
+      language: dto.language ?? 'plain',
+      starterCode: dto.starterCode ?? '',
+    };
+  }
+  return { ...base, kind: 'verbal', text: dto.text ?? '' };
+};
 
-export const toQuestionDto = (model: Question): QuestionDto => ({
-  id: model.id,
-  templateId: model.templateId,
-  categoryId: model.categoryId,
-  text: model.text,
-  weight: model.weight,
-  order: model.order,
-  criteria: model.criteria,
-});
+export const toQuestionDto = (model: Question): QuestionDto => {
+  const base = {
+    id: model.id,
+    templateId: model.templateId,
+    categoryId: model.categoryId,
+    weight: model.weight,
+    order: model.order,
+    criteria: model.criteria,
+  };
+  if (model.kind === 'coding') {
+    return {
+      ...base,
+      kind: 'coding',
+      title: model.title,
+      description: model.description,
+      language: model.language,
+      starterCode: model.starterCode,
+    };
+  }
+  return { ...base, kind: 'verbal', text: model.text };
+};

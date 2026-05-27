@@ -54,6 +54,7 @@ const answer = (
   interviewId: INTERVIEW_ID,
   questionId: asId<'QuestionId'>(`q-${id}`),
   categoryId,
+  questionKind: 'verbal',
   questionText: '',
   questionWeight: 1,
   questionCriteria: '',

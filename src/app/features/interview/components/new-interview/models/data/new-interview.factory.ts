@@ -45,19 +45,32 @@ export const buildNewInterviewAggregate = (input: BuildInterviewInput): Intervie
     createdAt: now,
     updatedAt: now,
   };
-  const answers: readonly Answer[] = ordered.map((q, index) => ({
-    id: newId<'AnswerId'>(),
-    interviewId,
-    questionId: q.id,
-    categoryId: q.categoryId,
-    questionText: q.text,
-    questionWeight: q.weight,
-    questionCriteria: q.criteria,
-    score: null,
-    comment: '',
-    skipped: false,
-    order: index,
-  }));
+  const answers: readonly Answer[] = ordered.map((q, index) => {
+    const base = {
+      id: newId<'AnswerId'>(),
+      interviewId,
+      questionId: q.id,
+      categoryId: q.categoryId,
+      questionWeight: q.weight,
+      questionCriteria: q.criteria,
+      score: null,
+      comment: '',
+      skipped: false,
+      order: index,
+    } as const;
+    if (q.kind === 'coding') {
+      return {
+        ...base,
+        questionKind: 'coding',
+        questionText: q.title,
+        questionDescription: q.description,
+        questionLanguage: q.language,
+        questionStarterCode: q.starterCode,
+        code: q.starterCode,
+      };
+    }
+    return { ...base, questionKind: 'verbal', questionText: q.text };
+  });
   return { interview, answers };
 };
 

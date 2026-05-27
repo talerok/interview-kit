@@ -12,21 +12,104 @@
     </button>
   </header>
 
-  <label class="field">
-    <span class="field__label">Текст вопроса *</span>
-    <textarea
-      class="input textarea"
-      [formField]="_form.text"
-      rows="3"
-      placeholder="Например: Объясните разницу между let, const и var."
-      autofocus
-    ></textarea>
-    @if (_form.text().touched() && _form.text().errors().length) {
-      <span class="field__error">{{ _form.text().errors()[0].message }}</span>
-    } @else {
-      <span class="field__hint">Минимум 3 символа.</span>
+  <div class="field">
+    <span class="field__label">Тип вопроса</span>
+    <div class="kinds">
+      <button
+        type="button"
+        class="kind"
+        [class.is-on]="_model().kind === 'verbal'"
+        [disabled]="_kindLocked() && _model().kind !== 'verbal'"
+        (click)="_setKind('verbal')"
+      >Устный</button>
+      <button
+        type="button"
+        class="kind"
+        [class.is-on]="_model().kind === 'coding'"
+        [disabled]="_kindLocked() && _model().kind !== 'coding'"
+        (click)="_setKind('coding')"
+      >Лайв-кодинг</button>
+    </div>
+    @if (_kindLocked()) {
+      <span class="field__hint">Тип нельзя менять у существующего вопроса.</span>
     }
-  </label>
+  </div>
+
+  @if (_model().kind === 'verbal') {
+    <label class="field">
+      <span class="field__label">Текст вопроса *</span>
+      <textarea
+        class="input textarea"
+        [formField]="_form.text"
+        rows="3"
+        placeholder="Например: Объясните разницу между let, const и var."
+        autofocus
+      ></textarea>
+      @if (_form.text().touched() && _form.text().errors().length) {
+        <span class="field__error">{{ _form.text().errors()[0].message }}</span>
+      } @else {
+        <span class="field__hint">Минимум 3 символа.</span>
+      }
+    </label>
+  } @else {
+    <label class="field">
+      <span class="field__label">Название задачи *</span>
+      <input
+        type="text"
+        class="input"
+        [formField]="_form.title"
+        placeholder="Например: Реализовать LRU cache"
+        autofocus
+      />
+      @if (_form.title().touched() && _form.title().errors().length) {
+        <span class="field__error">{{ _form.title().errors()[0].message }}</span>
+      } @else {
+        <span class="field__hint">Минимум 3 символа.</span>
+      }
+    </label>
+
+    <div class="field">
+      <span class="field__label">Язык</span>
+      <div class="langs">
+        @for (l of _languages; track l.value) {
+          <button
+            type="button"
+            class="lang"
+            [class.is-on]="_model().language === l.value"
+            (click)="_setLanguage(l.value)"
+          >{{ l.label }}</button>
+        }
+      </div>
+    </div>
+
+    <label class="field">
+      <span class="field__label">Описание задачи *</span>
+      <textarea
+        class="input textarea"
+        [formField]="_form.description"
+        rows="6"
+        placeholder="Что нужно реализовать, какие требования, какие edge-cases…"
+      ></textarea>
+      @if (_form.description().touched() && _form.description().errors().length) {
+        <span class="field__error">{{ _form.description().errors()[0].message }}</span>
+      } @else {
+        <span class="field__hint">Минимум 10 символов. Видно кандидату.</span>
+      }
+    </label>
+
+    <label class="field">
+      <span class="field__label">
+        Стартовый код
+        <span class="field__hint">не обязательно</span>
+      </span>
+      <textarea
+        class="input textarea textarea--mono"
+        [formField]="_form.starterCode"
+        rows="6"
+        placeholder="// boilerplate, который увидит кандидат при старте"
+      ></textarea>
+    </label>
+  }
 
   <label class="field">
     <span class="field__label">
@@ -91,7 +174,7 @@
 
   <footer class="q-edit__foot">
     <button type="button" class="btn" (click)="_onCancel()">Отмена</button>
-    <button type="submit" class="btn btn--accent" [disabled]="_form().invalid()">
+    <button type="submit" class="btn btn--accent" [disabled]="!_canSubmit()">
       <app-icon name="check" />
       @if (mode() === 'new') { Добавить } @else { Сохранить }
     </button>

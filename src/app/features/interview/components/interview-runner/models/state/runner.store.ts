@@ -76,6 +76,7 @@ export class RunnerStore {
     score?: AnswerScore | null;
     comment?: string;
     skipped?: boolean;
+    code?: string;
   }): Answer | null {
     if (this.currentAnswer() === null) return null;
     mutateSignal(this._aggregate, (draft) => {
@@ -84,6 +85,10 @@ export class RunnerStore {
       if (patch.score !== undefined) target.score = patch.score;
       if (patch.comment !== undefined) target.comment = patch.comment;
       if (patch.skipped !== undefined) target.skipped = patch.skipped;
+      // `code` only exists on CodingAnswer — silently ignore writes for verbal.
+      if (patch.code !== undefined && target.questionKind === 'coding') {
+        target.code = patch.code;
+      }
     });
     return this.currentAnswer();
   }

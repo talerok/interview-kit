@@ -38,9 +38,24 @@ const QUESTION_DTO: QuestionDto = {
   id: 'q1',
   templateId: 't1',
   categoryId: 'c1',
+  kind: 'verbal',
   text: 'Объясните сложность quicksort',
   weight: 2,
   order: 3,
+  criteria: '',
+};
+
+const CODING_QUESTION_DTO: QuestionDto = {
+  id: 'q2',
+  templateId: 't1',
+  categoryId: 'c1',
+  kind: 'coding',
+  title: 'LRU cache',
+  description: 'Реализуйте LRU-кэш с операциями get/put за O(1).',
+  language: 'typescript',
+  starterCode: '',
+  weight: 3,
+  order: 4,
   criteria: '',
 };
 
@@ -86,6 +101,38 @@ describe('template.mapper', () => {
     it('defaults missing criteria to empty string (legacy rows)', () => {
       const { criteria: _omit, ...legacy } = QUESTION_DTO;
       expect(toQuestion(legacy).criteria).toBe('');
+    });
+
+    it('defaults missing kind to verbal (legacy rows)', () => {
+      const { kind: _omit, ...legacy } = QUESTION_DTO;
+      const domain = toQuestion(legacy);
+      expect(domain.kind).toBe('verbal');
+      expect(domain.kind === 'verbal' && domain.text).toBe('Объясните сложность quicksort');
+    });
+
+    it('round-trips a coding QuestionDto', () => {
+      const domain = toQuestion(CODING_QUESTION_DTO);
+      expect(domain.kind).toBe('coding');
+      expect(toQuestionDto(domain)).toEqual(CODING_QUESTION_DTO);
+    });
+
+    it('coding mapper fills defaults for missing optional fields', () => {
+      const sparse: QuestionDto = {
+        id: 'q3',
+        templateId: 't1',
+        categoryId: null,
+        kind: 'coding',
+        weight: 1,
+        order: 0,
+      };
+      const domain = toQuestion(sparse);
+      expect(domain.kind).toBe('coding');
+      if (domain.kind === 'coding') {
+        expect(domain.title).toBe('');
+        expect(domain.description).toBe('');
+        expect(domain.language).toBe('plain');
+        expect(domain.starterCode).toBe('');
+      }
     });
   });
 });

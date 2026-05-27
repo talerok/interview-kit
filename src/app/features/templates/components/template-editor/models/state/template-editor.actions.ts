@@ -6,6 +6,7 @@ import { TemplatesActions } from '../../../../models/state/templates.actions';
 import {
   Category,
   CategoryId,
+  CodeLanguage,
   Question,
   QuestionId,
   QuestionWeight,
@@ -25,12 +26,26 @@ export interface UpdateMetaInput {
   readonly description?: string;
 }
 
-export interface AddQuestionInput {
-  readonly text: string;
+interface AddQuestionInputBase {
   readonly categoryId: CategoryId | null;
   readonly weight: QuestionWeight;
   readonly criteria: string;
 }
+
+export interface AddVerbalQuestionInput extends AddQuestionInputBase {
+  readonly kind: 'verbal';
+  readonly text: string;
+}
+
+export interface AddCodingQuestionInput extends AddQuestionInputBase {
+  readonly kind: 'coding';
+  readonly title: string;
+  readonly description: string;
+  readonly language: CodeLanguage;
+  readonly starterCode: string;
+}
+
+export type AddQuestionInput = AddVerbalQuestionInput | AddCodingQuestionInput;
 
 @Injectable()
 export class TemplateEditorActions {

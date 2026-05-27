@@ -38,6 +38,13 @@
     gap: 6px;
   }
 
+  &__title {
+    font-size: var(--text-md);
+    font-weight: 600;
+    color: var(--fg-strong);
+    letter-spacing: -0.01em;
+  }
+
   &__text {
     font-size: var(--text-base);
     color: var(--fg-strong);
@@ -51,6 +58,11 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+  }
+
+  &__title + &__text {
+    color: var(--fg-muted);
+    font-size: var(--text-sm);
   }
 
   &__toggle {
@@ -125,5 +137,12 @@
   &--muted {
     color: var(--fg-subtle);
     background: var(--bg-subtle);
+  }
+
+  &--coding {
+    color: var(--accent-subtle-fg);
+    background: var(--accent-subtle-bg);
+    font-family: var(--font-mono);
+    text-transform: lowercase;
   }
 }

@@ -37,6 +37,7 @@ const answer = (
   interviewId: IID,
   questionId: asId<'QuestionId'>(`q-${id}`),
   categoryId: null,
+  questionKind: 'verbal',
   questionText: `Q ${id}`,
   questionWeight: 1,
   questionCriteria: '',
@@ -167,6 +168,40 @@ describe('RunnerStore', () => {
       store.setAggregate(aggregate([answer('a', 5)]));
       store.patchCurrentAnswer({ score: null });
       expect(store.currentAnswer()!.score).toBeNull();
+    });
+  });
+
+  it('patchCurrentAnswer writes code on the current coding answer', () => {
+    TestBed.runInInjectionContext(() => {
+      const store = new RunnerStore();
+      const { questionKind: _omit, ...verbal } = answer('a');
+      const coding: Answer = {
+        ...verbal,
+        questionKind: 'coding',
+        questionDescription: 'task',
+        questionLanguage: 'typescript',
+        questionStarterCode: '',
+        code: '',
+      };
+      store.setAggregate(aggregate([coding]));
+      store.patchCurrentAnswer({ code: 'const x = 1;' });
+      const current = store.currentAnswer()!;
+      expect(current.questionKind).toBe('coding');
+      if (current.questionKind === 'coding') {
+        expect(current.code).toBe('const x = 1;');
+      }
+    });
+  });
+
+  it('patchCurrentAnswer ignores `code` writes for verbal answers', () => {
+    TestBed.runInInjectionContext(() => {
+      const store = new RunnerStore();
+      store.setAggregate(aggregate([answer('a')]));
+      store.patchCurrentAnswer({ code: 'should be ignored' } as never);
+      // verbal answers don't carry a `code` field; the store skips the write.
+      const current = store.currentAnswer()!;
+      expect(current.questionKind).toBe('verbal');
+      expect('code' in current).toBe(false);
     });
   });
 

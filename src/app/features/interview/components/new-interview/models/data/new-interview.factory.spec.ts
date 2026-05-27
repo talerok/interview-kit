@@ -14,6 +14,7 @@ const CAT_A = asId<'CategoryId'>('ca') as CategoryId;
 const CAT_B = asId<'CategoryId'>('cb') as CategoryId;
 
 const question = (id: string, categoryId: CategoryId, order: number): Question => ({
+  kind: 'verbal',
   id: asId<'QuestionId'>(id) as QuestionId,
   templateId: TID,
   categoryId,
@@ -112,6 +113,7 @@ describe('buildNewInterviewAggregate', () => {
 
   it('uncategorized pick pulls from the UNCATEGORIZED_KEY bucket; answer.categoryId stays null', () => {
     const uncatQuestion: Question = {
+      kind: 'verbal',
       id: asId<'QuestionId'>('u1') as QuestionId,
       templateId: TID,
       categoryId: null,
@@ -144,5 +146,42 @@ describe('buildNewInterviewAggregate', () => {
     });
     expect(out.interview.candidate).toEqual(candidate);
     expect(out.interview.candidate).not.toBe(candidate);
+  });
+
+  it('coding question snapshots title/description/language/starterCode onto Answer', () => {
+    const codingQ: Question = {
+      kind: 'coding',
+      id: asId<'QuestionId'>('cq1') as QuestionId,
+      templateId: TID,
+      categoryId: CAT_A,
+      title: 'LRU cache',
+      description: 'Реализуйте LRU-кэш с O(1) get/put.',
+      language: 'typescript',
+      starterCode: 'class LRU {}',
+      weight: 3,
+      order: 0,
+      criteria: 'Проверить понимание hash + linked list',
+    };
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [pick(CAT_A, 1, 'first')],
+      questionsByCategory: { [CAT_A]: [codingQ] },
+      runOrder: 'sequential',
+    });
+
+    expect(out.answers).toHaveLength(1);
+    const a = out.answers[0];
+    expect(a.questionKind).toBe('coding');
+    if (a.questionKind !== 'coding') throw new Error('expected coding');
+    // For coding answers, questionText carries the task title (the prompt).
+    expect(a.questionText).toBe('LRU cache');
+    expect(a.questionDescription).toBe('Реализуйте LRU-кэш с O(1) get/put.');
+    expect(a.questionLanguage).toBe('typescript');
+    expect(a.questionStarterCode).toBe('class LRU {}');
+    // code is pre-populated with the starter so the candidate sees boilerplate.
+    expect(a.code).toBe('class LRU {}');
+    expect(a.questionWeight).toBe(3);
+    expect(a.questionCriteria).toBe('Проверить понимание hash + linked list');
   });
 });
