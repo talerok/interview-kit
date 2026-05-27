@@ -125,8 +125,13 @@ const chromeTheme: Extension = EditorView.theme({
     color: 'var(--fg-muted)',
   },
   '.cm-activeLine': { backgroundColor: 'transparent' },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
-    backgroundColor: 'var(--accent-subtle-bg)',
+  // Only style CodeMirror's own selection overlay — `drawSelection` already
+  // hides the native browser selection. CM's own baseTheme uses
+  // `.cm-selectionLayer .cm-selectionBackground` plus a `&dark` variant with
+  // higher specificity than our theme, so we mirror the selector and add
+  // `!important` to win regardless of editor mode.
+  '.cm-selectionLayer .cm-selectionBackground, &.cm-focused .cm-selectionLayer .cm-selectionBackground': {
+    backgroundColor: 'var(--bg-active) !important',
   },
   '.cm-placeholder': {
     color: 'var(--fg-faint)',
