@@ -79,7 +79,8 @@ export class QuestionListComponent {
     if (!this._canReorder()) return;
     if (event.previousIndex === event.currentIndex) return;
     const next = this._rows().slice();
-    moveItemInArray(next, event.previousIndex, event.currentIndex);
+    const { previousIndex, currentIndex } = event;
+    moveItemInArray(next, previousIndex, currentIndex);
     const orderedIds = next.map((r) => r.question.id);
     this._actions
       .reorderQuestions(orderedIds)

@@ -1,4 +1,5 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { mutateSignal } from '../../shared/utils';
 import {
   Account,
   AccountId,
@@ -15,8 +16,8 @@ import { AccountsRepo } from './accounts-repo';
  * Identity-only. Cloud sync runtime state (manifest version, lastSync) and
  * cloud-specific actions (OAuth) live elsewhere.
  *
- * Hydrates from localStorage in the constructor and auto-persists on every
- * mutation, so consumers can mutate without thinking about persistence.
+ * Hydrates from localStorage in the constructor and persists to localStorage
+ * after every mutation.
  */
 @Injectable({ providedIn: 'root' })
 export class AccountsStore {
@@ -44,33 +45,28 @@ export class AccountsStore {
   });
 
   upsert(account: Account): void {
-    this._commit((r) => {
-      const idx = r.accounts.findIndex((a) => a.id === account.id);
-      const accounts =
-        idx >= 0
-          ? r.accounts.map((a, i) => (i === idx ? account : a))
-          : [...r.accounts, account];
-      return { ...r, accounts };
+    mutateSignal(this._registry, (draft) => {
+      const idx = draft.accounts.findIndex((a) => a.id === account.id);
+      if (idx >= 0) draft.accounts[idx] = account;
+      else draft.accounts.push(account);
     });
+    this._repo.write(this._registry());
   }
 
   remove(id: AccountId): void {
     if (id === LOCAL_ACCOUNT_ID) return;
-    this._commit((r) => ({
-      ...r,
-      accounts: r.accounts.filter((a) => a.id !== id),
-      activeId: r.activeId === id ? LOCAL_ACCOUNT_ID : r.activeId,
-    }));
+    mutateSignal(this._registry, (draft) => {
+      draft.accounts = draft.accounts.filter((a) => a.id !== id);
+      if (draft.activeId === id) draft.activeId = LOCAL_ACCOUNT_ID;
+    });
+    this._repo.write(this._registry());
   }
 
   setActive(id: AccountId): void {
     if (this._registry().activeId === id) return;
-    this._commit((r) => ({ ...r, activeId: id }));
-  }
-
-  private _commit(mutate: (r: AccountsRegistry) => AccountsRegistry): void {
-    const next = mutate(this._registry());
-    this._registry.set(next);
-    this._repo.write(next);
+    mutateSignal(this._registry, (draft) => {
+      draft.activeId = id;
+    });
+    this._repo.write(this._registry());
   }
 }

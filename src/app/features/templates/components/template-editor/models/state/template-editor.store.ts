@@ -1,4 +1,5 @@
 import { Injectable, Signal, computed, signal } from '@angular/core';
+import { mutateSignal } from '../../../../../../shared/utils';
 import {
   Category,
   CategoryId,
@@ -22,20 +23,20 @@ export class TemplateEditorStore {
   readonly filter = this._filter.asReadonly();
   readonly editing = this._editing.asReadonly();
 
-  readonly template: Signal<Template | null> = computed(() => this._aggregate()?.template ?? null);
-  readonly categories: Signal<readonly Category[]> = computed(
-    () => this._aggregate()?.categories ?? [],
-  );
-  readonly questions: Signal<readonly Question[]> = computed(
-    () => this._aggregate()?.questions ?? [],
-  );
+  readonly template: Signal<Template | null> = computed(() => {
+    return this._aggregate()?.template ?? null;
+  });
+  readonly categories: Signal<readonly Category[]> = computed(() => {
+    return this._aggregate()?.categories ?? [];
+  });
+  readonly questions: Signal<readonly Question[]> = computed(() => {
+    return this._aggregate()?.questions ?? [];
+  });
 
   readonly filteredQuestions: Signal<readonly Question[]> = computed(() => {
     const all = this.questions();
     const filter = this._filter();
-    if (filter === null) {
-      return all;
-    }
+    if (filter === null) return all;
     return all.filter((q) => q.categoryId === filter);
   });
 
@@ -56,64 +57,53 @@ export class TemplateEditorStore {
   }
 
   replaceTemplate(template: Template): void {
-    this._aggregate.update((a) => (a ? { ...a, template } : a));
+    mutateSignal(this._aggregate, (draft) => {
+      draft.template = template;
+    });
   }
 
   addCategory(category: Category): void {
-    this._aggregate.update((a) =>
-      a ? { ...a, categories: [...a.categories, category] } : a,
-    );
+    mutateSignal(this._aggregate, (draft) => {
+      draft.categories.push(category);
+    });
   }
 
   updateCategory(category: Category): void {
-    this._aggregate.update((a) =>
-      a
-        ? {
-            ...a,
-            categories: a.categories.map((c) => (c.id === category.id ? category : c)),
-          }
-        : a,
-    );
+    mutateSignal(this._aggregate, (draft) => {
+      const i = draft.categories.findIndex((c) => c.id === category.id);
+      if (i >= 0) draft.categories[i] = category;
+    });
   }
 
   removeCategory(id: CategoryId): void {
-    this._aggregate.update((a) =>
-      a
-        ? {
-            ...a,
-            categories: a.categories.filter((c) => c.id !== id),
-            questions: a.questions.map((q) =>
-              q.categoryId === id ? { ...q, categoryId: null } : q,
-            ),
-          }
-        : a,
-    );
+    mutateSignal(this._aggregate, (draft) => {
+      draft.categories = draft.categories.filter((c) => c.id !== id);
+      for (const q of draft.questions) {
+        if (q.categoryId === id) q.categoryId = null;
+      }
+    });
     if (this._filter() === id) {
       this._filter.set(null);
     }
   }
 
   addQuestion(question: Question): void {
-    this._aggregate.update((a) =>
-      a ? { ...a, questions: [...a.questions, question] } : a,
-    );
+    mutateSignal(this._aggregate, (draft) => {
+      draft.questions.push(question);
+    });
   }
 
   updateQuestion(question: Question): void {
-    this._aggregate.update((a) =>
-      a
-        ? {
-            ...a,
-            questions: a.questions.map((q) => (q.id === question.id ? question : q)),
-          }
-        : a,
-    );
+    mutateSignal(this._aggregate, (draft) => {
+      const i = draft.questions.findIndex((q) => q.id === question.id);
+      if (i >= 0) draft.questions[i] = question;
+    });
   }
 
   removeQuestion(id: QuestionId): void {
-    this._aggregate.update((a) =>
-      a ? { ...a, questions: a.questions.filter((q) => q.id !== id) } : a,
-    );
+    mutateSignal(this._aggregate, (draft) => {
+      draft.questions = draft.questions.filter((q) => q.id !== id);
+    });
   }
 
   /**
@@ -122,16 +112,13 @@ export class TemplateEditorStore {
    * already been persisted to IDB by the action.
    */
   reorderQuestions(orderedIds: readonly QuestionId[]): void {
-    this._aggregate.update((a) => {
-      if (a === null) return a;
-      const indexById = new Map(orderedIds.map((id, i) => [id, i]));
-      const fallback = orderedIds.length;
-      return {
-        ...a,
-        questions: a.questions
-          .map((q) => ({ ...q, order: indexById.get(q.id) ?? fallback }))
-          .sort((x, y) => x.order - y.order),
-      };
+    const indexById = new Map(orderedIds.map((id, i) => [id, i]));
+    const fallback = orderedIds.length;
+    mutateSignal(this._aggregate, (draft) => {
+      for (const q of draft.questions) {
+        q.order = indexById.get(q.id) ?? fallback;
+      }
+      draft.questions.sort((a, b) => a.order - b.order);
     });
   }
 

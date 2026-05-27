@@ -1,4 +1,5 @@
 import { Injectable, Signal, computed, signal } from '@angular/core';
+import { mutateSignal } from '../../../../../../shared/utils';
 import {
   Answer,
   AnswerScore,
@@ -59,30 +60,31 @@ export class RunnerStore {
   }
 
   replaceInterview(interview: Interview): void {
-    this._aggregate.update((a) => (a ? { ...a, interview } : a));
+    mutateSignal(this._aggregate, (draft) => {
+      draft.interview = interview;
+    });
   }
 
   replaceAnswer(answer: Answer): void {
-    this._aggregate.update((a) =>
-      a
-        ? {
-            ...a,
-            answers: a.answers.map((x) => (x.id === answer.id ? answer : x)),
-          }
-        : a,
-    );
+    mutateSignal(this._aggregate, (draft) => {
+      const i = draft.answers.findIndex((x) => x.id === answer.id);
+      if (i >= 0) draft.answers[i] = answer;
+    });
   }
 
-  patchCurrentAnswer(patch: { score?: AnswerScore | null; comment?: string; skipped?: boolean }): Answer | null {
-    const current = this.currentAnswer();
-    if (current === null) return null;
-    const next: Answer = {
-      ...current,
-      score: patch.score !== undefined ? patch.score : current.score,
-      comment: patch.comment !== undefined ? patch.comment : current.comment,
-      skipped: patch.skipped !== undefined ? patch.skipped : current.skipped,
-    };
-    this.replaceAnswer(next);
-    return next;
+  patchCurrentAnswer(patch: {
+    score?: AnswerScore | null;
+    comment?: string;
+    skipped?: boolean;
+  }): Answer | null {
+    if (this.currentAnswer() === null) return null;
+    mutateSignal(this._aggregate, (draft) => {
+      const target = draft.answers[this._idx()];
+      if (target === undefined) return;
+      if (patch.score !== undefined) target.score = patch.score;
+      if (patch.comment !== undefined) target.comment = patch.comment;
+      if (patch.skipped !== undefined) target.skipped = patch.skipped;
+    });
+    return this.currentAnswer();
   }
 }

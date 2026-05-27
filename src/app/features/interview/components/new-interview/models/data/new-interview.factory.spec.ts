@@ -6,7 +6,7 @@ import {
   QuestionId,
   TemplateId,
 } from '../../../../../templates/interfaces/template';
-import { CategoryPick } from '../state/new-interview.store';
+import { CategoryPick, UNCATEGORIZED_KEY } from '../state/new-interview.store';
 import { buildNewInterviewAggregate } from './new-interview.factory';
 
 const TID = asId<'TemplateId'>('t1') as TemplateId;
@@ -107,6 +107,29 @@ describe('buildNewInterviewAggregate', () => {
     expect(out.interview.skippedCount).toBe(0);
     expect(out.interview.avg).toBe(0);
     expect(out.interview.answersCount).toBe(1);
+  });
+
+  it('uncategorized pick pulls from the UNCATEGORIZED_KEY bucket; answer.categoryId stays null', () => {
+    const uncatQuestion: Question = {
+      id: asId<'QuestionId'>('u1') as QuestionId,
+      templateId: TID,
+      categoryId: null,
+      text: 'q u1',
+      weight: 1,
+      order: 0,
+    };
+    const out = buildNewInterviewAggregate({
+      templateId: TID,
+      candidate,
+      picks: [
+        { categoryId: UNCATEGORIZED_KEY as CategoryId, enabled: true, count: 1, mode: 'first' },
+      ],
+      questionsByCategory: { ...buckets, [UNCATEGORIZED_KEY]: [uncatQuestion] },
+      runOrder: 'sequential',
+    });
+    expect(out.answers).toHaveLength(1);
+    expect(out.answers[0].questionId).toBe('u1');
+    expect(out.answers[0].categoryId).toBeNull();
   });
 
   it('candidate is copied into the interview (defensive clone)', () => {

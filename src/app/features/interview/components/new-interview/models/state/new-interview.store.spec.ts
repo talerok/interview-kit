@@ -10,7 +10,7 @@ import {
   TemplateAggregate,
   TemplateId,
 } from '../../../../../templates/interfaces/template';
-import { NewInterviewStore } from './new-interview.store';
+import { NewInterviewStore, UNCATEGORIZED_KEY } from './new-interview.store';
 
 const TID = asId<'TemplateId'>('t1') as TemplateId;
 const CAT_A = asId<'CategoryId'>('ca') as CategoryId;
@@ -67,15 +67,27 @@ describe('NewInterviewStore', () => {
     });
   });
 
-  it('setAggregate seeds one pick per category in category.order', () => {
+  it('setAggregate seeds one pick per category in order + uncategorized at the tail', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
       const picks = store.picks();
-      expect(picks).toHaveLength(2);
-      expect(picks.map((p) => p.categoryId)).toEqual([CAT_A, CAT_B]);
+      // CAT_A, CAT_B + uncategorized (because q4 has categoryId: null)
+      expect(picks).toHaveLength(3);
+      expect(picks.map((p) => p.categoryId)).toEqual([CAT_A, CAT_B, UNCATEGORIZED_KEY]);
       expect(picks.every((p) => p.enabled)).toBe(true);
       expect(picks.every((p) => p.mode === 'random')).toBe(true);
+    });
+  });
+
+  it('does not seed an uncategorized pick when no question is uncategorized', () => {
+    TestBed.runInInjectionContext(() => {
+      const store = new NewInterviewStore();
+      store.setAggregate({
+        ...aggregate,
+        questions: aggregate.questions.filter((q) => q.categoryId !== null),
+      });
+      expect(store.picks().map((p) => p.categoryId)).toEqual([CAT_A, CAT_B]);
     });
   });
 
@@ -83,11 +95,12 @@ describe('NewInterviewStore', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
-      // CAT_A has 2 questions, CAT_B has 1
       const a = store.picks().find((p) => p.categoryId === CAT_A);
       const b = store.picks().find((p) => p.categoryId === CAT_B);
+      const uncat = store.picks().find((p) => p.categoryId === UNCATEGORIZED_KEY);
       expect(a?.count).toBe(2);
       expect(b?.count).toBe(1);
+      expect(uncat?.count).toBe(1);
     });
   });
 
@@ -95,11 +108,11 @@ describe('NewInterviewStore', () => {
     TestBed.runInInjectionContext(() => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
-      // CAT_A: 2, CAT_B: 1 → 3
-      expect(store.effectiveTotal()).toBe(3);
+      // CAT_A: 2, CAT_B: 1, uncategorized: 1 → 4
+      expect(store.effectiveTotal()).toBe(4);
 
       store.setEnabled(CAT_B, false);
-      expect(store.effectiveTotal()).toBe(2);
+      expect(store.effectiveTotal()).toBe(3);
     });
   });
 
@@ -130,7 +143,11 @@ describe('NewInterviewStore', () => {
       const store = new NewInterviewStore();
       store.setAggregate(aggregate);
       store.reorderPicks(0, 1);
-      expect(store.picks().map((p) => p.categoryId)).toEqual([CAT_B, CAT_A]);
+      expect(store.picks().map((p) => p.categoryId)).toEqual([
+        CAT_B,
+        CAT_A,
+        UNCATEGORIZED_KEY,
+      ]);
     });
   });
 
