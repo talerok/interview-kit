@@ -1,13 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, map, of, switchMap, tap } from 'rxjs';
 import { CloudSyncService } from '../../../../../../api/cloud';
-import { TemplateId } from '../../../../../templates/interfaces/template';
+import { CategoryId, TemplateId } from '../../../../../templates/interfaces/template';
 import { TemplateRepo } from '../../../../../templates/models/data/template.repo';
-import { Interview, InterviewId } from '../../../../interfaces/interview';
+import { CandidateInfo, Interview, InterviewId } from '../../../../interfaces/interview';
 import { InterviewRepo } from '../../../../models/data/interview.repo';
 import { InterviewsActions } from '../../../../models/state/interviews.actions';
 import { buildNewInterviewAggregate } from '../data/new-interview.factory';
-import { NewInterviewStore } from './new-interview.store';
+import { NewInterviewStore, PickMode, RunOrder } from './new-interview.store';
 
 @Injectable()
 export class NewInterviewActions {
@@ -26,6 +26,34 @@ export class NewInterviewActions {
       tap((aggregate) => this._store.setAggregate(aggregate)),
       map(() => undefined),
     );
+  }
+
+  setEnabled(categoryId: CategoryId, enabled: boolean): void {
+    this._store.setEnabled(categoryId, enabled);
+  }
+
+  toggleAllCategories(): void {
+    this._store.toggleAll();
+  }
+
+  setPickCount(categoryId: CategoryId, value: number): void {
+    this._store.setPickCount(categoryId, value);
+  }
+
+  setPickMode(categoryId: CategoryId, mode: PickMode): void {
+    this._store.setPickMode(categoryId, mode);
+  }
+
+  reorderPicks(fromIndex: number, toIndex: number): void {
+    this._store.reorderPicks(fromIndex, toIndex);
+  }
+
+  setRunOrder(value: RunOrder): void {
+    this._store.setRunOrder(value);
+  }
+
+  updateCandidate(patch: Partial<CandidateInfo>): void {
+    this._store.updateCandidate(patch);
   }
 
   start(): Observable<Interview> {

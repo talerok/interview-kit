@@ -71,52 +71,52 @@ export class NewInterviewComponent {
   }
 
   protected _onToggleAll(): void {
-    this._store.toggleAll();
+    this._actions.toggleAllCategories();
   }
 
   protected _onToggle(categoryId: CategoryId, enabled: boolean): void {
-    this._store.setEnabled(categoryId, enabled);
+    this._actions.setEnabled(categoryId, enabled);
   }
 
   protected _onCountChange(categoryId: CategoryId, event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
     if (Number.isFinite(value)) {
-      this._store.setPickCount(categoryId, Math.round(value));
+      this._actions.setPickCount(categoryId, Math.round(value));
     }
   }
 
   protected _incCount(row: PickRow): void {
     if (row.pick.count >= row.available) return;
-    this._store.setPickCount(row.pick.categoryId, row.pick.count + 1);
+    this._actions.setPickCount(row.pick.categoryId, row.pick.count + 1);
   }
 
   protected _decCount(row: PickRow): void {
     if (row.pick.count <= 0) return;
-    this._store.setPickCount(row.pick.categoryId, row.pick.count - 1);
+    this._actions.setPickCount(row.pick.categoryId, row.pick.count - 1);
   }
 
   protected _setMode(categoryId: CategoryId, mode: PickMode): void {
-    this._store.setPickMode(categoryId, mode);
+    this._actions.setPickMode(categoryId, mode);
   }
 
   protected _setRunOrder(value: RunOrder): void {
-    this._store.setRunOrder(value);
+    this._actions.setRunOrder(value);
   }
 
   protected _onDrop(event: CdkDragDrop<readonly PickRow[]>): void {
-    this._store.reorderPicks(event.previousIndex, event.currentIndex);
+    this._actions.reorderPicks(event.previousIndex, event.currentIndex);
   }
 
   protected _onCandidateName(event: Event): void {
-    this._store.updateCandidate({ name: (event.target as HTMLInputElement).value });
+    this._actions.updateCandidate({ name: (event.target as HTMLInputElement).value });
   }
 
   protected _onCandidatePosition(event: Event): void {
-    this._store.updateCandidate({ position: (event.target as HTMLInputElement).value });
+    this._actions.updateCandidate({ position: (event.target as HTMLInputElement).value });
   }
 
   protected _onCandidateDate(event: Event): void {
-    this._store.updateCandidate({ date: (event.target as HTMLInputElement).value });
+    this._actions.updateCandidate({ date: (event.target as HTMLInputElement).value });
   }
 
   protected _onCancel(): void {

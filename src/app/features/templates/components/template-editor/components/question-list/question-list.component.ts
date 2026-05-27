@@ -72,7 +72,7 @@ export class QuestionListComponent {
   );
 
   protected _onAdd(): void {
-    this._store.startAdding();
+    this._actions.startAdding();
   }
 
   protected _onDrop(event: CdkDragDrop<readonly RenderRow[]>): void {
@@ -88,18 +88,18 @@ export class QuestionListComponent {
   }
 
   protected _onEdit(id: QuestionId): void {
-    this._store.startEditing(id);
+    this._actions.startEditing(id);
   }
 
   protected _onCancel(): void {
-    this._store.cancelEditing();
+    this._actions.cancelEditing();
   }
 
   protected _onSaveNew(draft: QuestionDraft): void {
     this._actions
       .addQuestion(draft)
       .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe(() => this._store.cancelEditing());
+      .subscribe(() => this._actions.cancelEditing());
   }
 
   protected _onSaveEdit(draft: QuestionDraft): void {
@@ -110,7 +110,7 @@ export class QuestionListComponent {
     this._actions
       .updateQuestion({ ...current, ...draft })
       .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe(() => this._store.cancelEditing());
+      .subscribe(() => this._actions.cancelEditing());
   }
 
   protected _onDelete(id: QuestionId): void {

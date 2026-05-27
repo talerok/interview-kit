@@ -36,11 +36,11 @@ export class EditorSideComponent {
   });
 
   protected _selectAll(): void {
-    this._store.setFilter(null);
+    this._actions.setFilter(null);
   }
 
   protected _selectCategory(id: CategoryId): void {
-    this._store.setFilter(id);
+    this._actions.setFilter(id);
   }
 
   protected _onAdd(): void {
