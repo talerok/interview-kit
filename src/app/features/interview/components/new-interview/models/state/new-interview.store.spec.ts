@@ -10,7 +10,8 @@ import {
   TemplateAggregate,
   TemplateId,
 } from '../../../../../templates/interfaces/template';
-import { NewInterviewStore, UNCATEGORIZED_KEY } from './new-interview.store';
+import { UNCATEGORIZED_KEY } from '../data/new-interview.mapper';
+import { NewInterviewStore } from './new-interview.store';
 
 const TID = asId<'TemplateId'>('t1') as TemplateId;
 const CAT_A = asId<'CategoryId'>('ca') as CategoryId;

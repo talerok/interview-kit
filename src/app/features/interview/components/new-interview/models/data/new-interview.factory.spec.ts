@@ -6,7 +6,8 @@ import {
   QuestionId,
   TemplateId,
 } from '../../../../../templates/interfaces/template';
-import { CategoryPick, UNCATEGORIZED_KEY } from '../state/new-interview.store';
+import { CategoryPick } from '../state/new-interview.store';
+import { UNCATEGORIZED_KEY } from './new-interview.mapper';
 import { buildNewInterviewAggregate } from './new-interview.factory';
 
 const TID = asId<'TemplateId'>('t1') as TemplateId;

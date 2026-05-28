@@ -8,6 +8,12 @@ import {
   TemplateId,
 } from '../../../../../templates/interfaces/template';
 import { CandidateInfo } from '../../../../interfaces/interview';
+import {
+  buildPickRows,
+  groupQuestionsByCategory,
+  indexCategories,
+  seedPicks,
+} from '../data/new-interview.mapper';
 
 export type PickMode = 'random' | 'first';
 export type RunOrder = 'sequential' | 'shuffled';
@@ -27,44 +33,17 @@ export interface PickRow {
   readonly effective: number;
 }
 
-type QuestionsByCategory = Readonly<Record<string, readonly Question[]>>;
+export type QuestionsByCategory = Readonly<Record<string, readonly Question[]>>;
 
-/** Sentinel "categoryId" for questions whose `Question.categoryId` is null.
- *  Lets pick rows treat uncategorized questions like any other category. */
-export const UNCATEGORIZED_KEY = 'uncategorized' as const;
-
-const UNCATEGORIZED_CATEGORY: Category = {
-  id: UNCATEGORIZED_KEY as CategoryId,
-  templateId: '' as TemplateId,
-  label: 'Без категории',
-  color: 'var(--fg-faint)',
-  order: Number.MAX_SAFE_INTEGER,
+const today = (): string => {
+  return new Date().toISOString().slice(0, 10);
 };
-
-const DEFAULT_PER_CATEGORY = 4;
-
-const today = (): string => new Date().toISOString().slice(0, 10);
 
 const initialCandidate = (): CandidateInfo => ({
   name: '',
   position: '',
   date: today(),
 });
-
-const groupQuestionsByCategory = (questions: readonly Question[]): QuestionsByCategory => {
-  const out: Record<string, Question[]> = {};
-  for (const q of questions) {
-    const key = q.categoryId ?? UNCATEGORIZED_KEY;
-    (out[key] ??= []).push(q);
-  }
-  return out;
-};
-
-const indexCategories = (categories: readonly Category[]): Record<string, Category> => {
-  const out: Record<string, Category> = {};
-  for (const c of categories) out[c.id] = c;
-  return out;
-};
 
 @Injectable()
 export class NewInterviewStore {
@@ -89,7 +68,9 @@ export class NewInterviewStore {
   );
 
   /** Pick rows joined with their category + counts, ready for the UI. */
-  readonly pickRows: Signal<readonly PickRow[]> = computed(() => this._buildPickRows());
+  readonly pickRows: Signal<readonly PickRow[]> = computed(() =>
+    buildPickRows(this._picks(), indexCategories(this.categories()), this.questionsByCategory()),
+  );
 
   /** Total number of questions that will end up in the interview. */
   readonly effectiveTotal: Signal<number> = computed(() =>
@@ -110,7 +91,7 @@ export class NewInterviewStore {
 
   setAggregate(aggregate: TemplateAggregate | null): void {
     this._aggregate.set(aggregate);
-    this._picks.set(aggregate === null ? [] : this._seedPicks(aggregate));
+    this._picks.set(aggregate === null ? [] : seedPicks(aggregate));
   }
 
   setEnabled(categoryId: CategoryId, enabled: boolean): void {
@@ -128,7 +109,7 @@ export class NewInterviewStore {
   }
 
   setPickCount(categoryId: CategoryId, value: number): void {
-    const max = this._availableInCategory(categoryId);
+    const max = this.questionsByCategory()[categoryId]?.length ?? 0;
     const clamped = Math.max(0, Math.min(value, max));
     mutateSignal(this._picks, (draft) => {
       const p = draft.find((x) => x.categoryId === categoryId);
@@ -159,48 +140,5 @@ export class NewInterviewStore {
     mutateSignal(this._candidate, (draft) => {
       Object.assign(draft, patch);
     });
-  }
-
-  private _buildPickRows(): readonly PickRow[] {
-    const picks = this._picks();
-    const categoryById = indexCategories(this.categories());
-    const buckets = this.questionsByCategory();
-    const rows: PickRow[] = [];
-    for (const pick of picks) {
-      const category =
-        pick.categoryId === UNCATEGORIZED_KEY
-          ? UNCATEGORIZED_CATEGORY
-          : categoryById[pick.categoryId];
-      if (category === undefined) continue;
-      const available = buckets[pick.categoryId]?.length ?? 0;
-      const effective = pick.enabled ? Math.min(pick.count, available) : 0;
-      rows.push({ pick, category, available, effective });
-    }
-    return rows;
-  }
-
-  private _seedPicks(aggregate: TemplateAggregate): readonly CategoryPick[] {
-    const sorted = aggregate.categories.slice().sort((a, b) => a.order - b.order);
-    const buckets = groupQuestionsByCategory(aggregate.questions);
-    const picks: CategoryPick[] = sorted.map((c) => ({
-      categoryId: c.id,
-      enabled: true,
-      count: Math.min(DEFAULT_PER_CATEGORY, buckets[c.id]?.length ?? 0),
-      mode: 'random',
-    }));
-    const uncategorizedCount = buckets[UNCATEGORIZED_KEY]?.length ?? 0;
-    if (uncategorizedCount > 0) {
-      picks.push({
-        categoryId: UNCATEGORIZED_KEY as CategoryId,
-        enabled: true,
-        count: Math.min(DEFAULT_PER_CATEGORY, uncategorizedCount),
-        mode: 'random',
-      });
-    }
-    return picks;
-  }
-
-  private _availableInCategory(categoryId: CategoryId): number {
-    return this.questionsByCategory()[categoryId]?.length ?? 0;
   }
 }
